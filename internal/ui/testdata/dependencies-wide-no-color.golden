@@ -1,11 +1,11 @@
- ERGO VIEW  ergoview-demo                                                                              1 Overview  2 Board  3 Dependencies
- 1 ready  1 doing  1 blocked  1 waiting
+ ERGO VIEW  product-roadmap                                                                            1 Overview  2 Board  3 Dependencies
+ 2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
 │ PREREQUISITES                                 SELECTED                                    UNLOCKS                                        │
-│  ✓ Read append-only events  DONE  ADAPTER                                                  · Document keyboard workflows  WAITING  DOC…  │
-│  ✓ Design responsive shell  DONE  DESIGN      ◐ Polish résumé & Crème brûlée views  DOIN…                                                │
+│  ✓ Load Ergo repositories  DONE  DLOAD1                                                    · Write install and keyboard guide  WAITING…  │
+│  ✓ Build board and dependency views  DONE  …  ◐ Add task editing workflows  DOING  DEDIT1  · Review editing flow with the team  WAITIN…  │
 │                                                                                                                                          │
-│                                              2 prerequisite · 1 dependent                                                                │
+│                                              2 prerequisite · 2 dependent                                                                │
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │

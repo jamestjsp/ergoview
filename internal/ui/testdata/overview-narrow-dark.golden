@@ -1,20 +1,20 @@
- ERGO VIEW  ergoview-demo                   1 Outline  2 Board  3 Deps
- 1 ready  1 doing  1 blocked  1 waiting
+ ERGO VIEW  product-roadmap                 1 Outline  2 Board  3 Deps
+ 2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────╮
 │ WORK                                                                 │
-│ ! Wait for signing credentials                       BLOCKED  BLOCKD │
-│ × Keep the discarded prototype                      CANCELED  OLDTUI │
-│ ◇ Ship Ergo View ✨                                      2/5  SHIP01 │
-│   ✓ Read append-only events                            DONE  ADAPTER │
-│   ✓ Design responsive shell                             DONE  DESIGN │
-│   · Document keyboard workflows                      WAITING  DOCS01 │
-│   ◐ Polish résumé & Crème brûlée views   DOING  POLISH  @codex@local │
-│   ○ Package ev.exe for Windows                        READY  WINDOWS │
-│                                                                      │
-│                                                                      │
-│                                                                      │
-│                                                                      │
-│                                                                      │
+│ ◇ Desktop experience                                     2/4  DESK01 │
+│   ◐ Add task editing workflows     DOING  DEDIT1  @codex@workstation │
+│   ✓ Load Ergo repositories                              DONE  DLOAD1 │
+│   ✓ Build board and dependency views                    DONE  DVIEW1 │
+│   ○ Package ev.exe for Windows                         READY  DWIN01 │
+│ · Publish the first public release                   WAITING  LAUNCH │
+│ ◇ Release readiness                                      0/3  REL001 │
+│   · Write install and keyboard guide                 WAITING  RDOCS1 │
+│   ! Configure release signing                        BLOCKED  RSIGN1 │
+│   ○ Polish light and dark themes                       READY  RTHEME │
+│ ◇ Team adoption                                          1/2  TEAM01 │
+│   × Keep the discarded prototype                    CANCELED  TDEMO1 │
+│   · Review editing flow with the team                WAITING  TREVW1 │
 │                                                                      │
 │                                                                      │
 │                                                                      │

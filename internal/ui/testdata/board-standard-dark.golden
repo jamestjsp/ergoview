@@ -1,9 +1,9 @@
- ERGO VIEW  ergoview-demo                                                1 Overview  2 Board  3 Dependencies
- 1 ready  1 doing  1 blocked  1 waiting
+ ERGO VIEW  product-roadmap                                              1 Overview  2 Board  3 Dependencies
+ 2 ready  1 doing  1 blocked  3 waiting
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ READY  1                           DOING  1                           DONE  2                              │
-│  ○ Package ev.exe for Windows  WI…  ◐ Polish résumé & Crème brûlée v…  ✓ Read append-only events  ADAPTER  │
-│                                                                        ✓ Design responsive shell  DESIGN   │
+│ READY  2                           DOING  1                           DONE  2                              │
+│  ○ Package ev.exe for Windows  DW…  ◐ Add task editing workflows  DE…  ✓ Load Ergo repositories  DLOAD1    │
+│  ○ Polish light and dark themes  …                                     ✓ Build board and dependency view…  │
 │                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │
@@ -13,10 +13,10 @@
 │                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │
-│ WAITING  1                         BLOCKED  1                         CANCELED  1                          │
-│  · Document keyboard workflows  D…  ! Wait for signing credentials  …  × Keep the discarded prototype  O…  │
-│                                                                                                            │
-│                                                                                                            │
+│ WAITING  3                         BLOCKED  1                         CANCELED  1                          │
+│  · Publish the first public relea…  ! Configure release signing  RSI…  × Keep the discarded prototype  T…  │
+│  · Write install and keyboard gui…                                                                         │
+│  · Review editing flow with the t…                                                                         │
 │                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │

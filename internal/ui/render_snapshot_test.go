@@ -25,10 +25,10 @@ func TestRenderSnapshots(t *testing.T) {
 		light    bool
 		noColor  bool
 	}{
-		{name: "overview-narrow-dark", width: 72, height: 24, view: viewOverview, selected: "POLISH"},
-		{name: "overview-wide-light", width: 140, height: 32, view: viewOverview, selected: "POLISH", light: true},
-		{name: "board-standard-dark", width: 110, height: 30, view: viewBoard, selected: "WINDOWS"},
-		{name: "dependencies-wide-no-color", width: 140, height: 32, view: viewDependencies, selected: "POLISH", noColor: true},
+		{name: "overview-narrow-dark", width: 72, height: 24, view: viewOverview, selected: "DEDIT1"},
+		{name: "overview-wide-light", width: 140, height: 32, view: viewOverview, selected: "DEDIT1", light: true},
+		{name: "board-standard-dark", width: 110, height: 30, view: viewBoard, selected: "RTHEME"},
+		{name: "dependencies-wide-no-color", width: 140, height: 32, view: viewDependencies, selected: "DEDIT1", noColor: true},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -51,21 +51,22 @@ func TestRenderSnapshots(t *testing.T) {
 func TestDocumentationScreenshots(t *testing.T) {
 	tests := []struct {
 		name     string
+		title    string
 		view     viewMode
 		selected string
 	}{
-		{name: "overview", view: viewOverview, selected: "POLISH"},
-		{name: "board", view: viewBoard, selected: "WINDOWS"},
-		{name: "dependencies", view: viewDependencies, selected: "POLISH"},
+		{name: "overview", title: "Overview", view: viewOverview, selected: "DEDIT1"},
+		{name: "board", title: "Board", view: viewBoard, selected: "RTHEME"},
+		{name: "dependencies", title: "Dependencies", view: viewDependencies, selected: "DEDIT1"},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			model := renderFixtureModel(t, false)
 			model.rebuildRows(test.selected)
 			model.setView(test.view)
-			model = resize(t, model, 140, 32)
+			model = resize(t, model, 124, 30)
 			model.syncDetail()
-			svg := terminalSVG(ansi.Strip(model.View().Content), "Ergo View — "+test.name)
+			svg := terminalSVG(ansi.Strip(model.View().Content), "Ergo View  ·  "+test.title, test.title)
 			assertGolden(t, filepath.Join("..", "..", "docs", "img", test.name+".svg"), svg)
 		})
 	}
@@ -95,7 +96,7 @@ func renderFixtureModel(t *testing.T, noColor bool) Model {
 	if err != nil {
 		t.Fatal(err)
 	}
-	snapshot.Root = "/workspace/ergoview-demo"
+	snapshot.Root = "/workspace/product-roadmap"
 	model := New(snapshot, Options{NoColor: noColor})
 	t.Setenv("NO_COLOR", "1")
 	return model
@@ -109,47 +110,178 @@ func plainSnapshot(content string) string {
 	return strings.Join(lines, "\n") + "\n"
 }
 
-func terminalSVG(content, title string) string {
+func terminalSVG(content, title, activeView string) string {
 	lines := strings.Split(strings.TrimRight(content, "\n"), "\n")
 	const (
-		charWidth  = 8
-		lineHeight = 17
-		padding    = 24
-		titleBar   = 42
+		cellWidth  = 8.2
+		lineHeight = 18
+		paddingX   = 26
+		paddingY   = 20
+		titleBar   = 46
 	)
-	maxWidth := 0
+	maxColumns := 0
 	for _, line := range lines {
-		maxWidth = max(maxWidth, len([]rune(line)))
+		maxColumns = max(maxColumns, len([]rune(line)))
 	}
-	width := maxWidth*charWidth + padding*2
-	height := len(lines)*lineHeight + padding*2 + titleBar
+	width := float64(maxColumns)*cellWidth + paddingX*2
+	height := float64(len(lines)*lineHeight + paddingY*2 + titleBar)
 	var body strings.Builder
 	for index, line := range lines {
-		y := titleBar + padding + (index+1)*lineHeight
-		fill := "#e2e8f0"
-		if index < 2 {
-			fill = "#c4b5fd"
+		y := float64(titleBar+paddingY+(index+1)*lineHeight) - 3
+		for _, run := range svgTextRuns(line) {
+			fill, weight, opacity := svgRunStyle(run.text, index, activeView)
+			fmt.Fprintf(
+				&body,
+				`    <text x="%.1f" y="%.1f" fill="%s" fill-opacity="%.2f" font-weight="%s" textLength="%.1f" lengthAdjust="spacingAndGlyphs">%s</text>`+"\n",
+				float64(paddingX)+float64(run.column)*cellWidth,
+				y,
+				fill,
+				opacity,
+				weight,
+				float64(len([]rune(run.text)))*cellWidth,
+				html.EscapeString(run.text),
+			)
 		}
-		fmt.Fprintf(
-			&body,
-			`  <text x="%d" y="%d" fill="%s">%s</text>`+"\n",
-			padding,
-			y,
-			fill,
-			html.EscapeString(line),
-		)
 	}
-	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d" viewBox="0 0 %d %d">
-  <rect width="100%%" height="100%%" rx="14" fill="#0b1020"/>
-  <path d="M14 0h%dq14 0 14 14v28H0V14Q0 0 14 0" fill="#171d30"/>
-  <circle cx="22" cy="21" r="5" fill="#fb7185"/>
-  <circle cx="40" cy="21" r="5" fill="#fbbf24"/>
-  <circle cx="58" cy="21" r="5" fill="#34d399"/>
-  <text x="50%%" y="26" text-anchor="middle" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13">%s</text>
-  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13" xml:space="preserve">
-%s  </g>
+	return fmt.Sprintf(`<svg xmlns="http://www.w3.org/2000/svg" width="%.0f" height="%.0f" viewBox="0 0 %.0f %.0f">
+  <defs>
+    <filter id="shadow" x="-10%%" y="-10%%" width="120%%" height="130%%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#020617" flood-opacity=".45"/>
+    </filter>
+    <clipPath id="window"><rect x="1" y="1" width="%.0f" height="%.0f" rx="15"/></clipPath>
+  </defs>
+  <rect x="1" y="1" width="%.0f" height="%.0f" rx="15" fill="#0a101c" stroke="#27344d" stroke-width="2" filter="url(#shadow)"/>
+  <g clip-path="url(#window)">
+    <rect x="1" y="1" width="%.0f" height="%d" fill="#151d30"/>
+    <path d="M1 %dH%.0f" stroke="#2a3650"/>
+    <circle cx="24" cy="23" r="5.5" fill="#fb7185"/>
+    <circle cx="43" cy="23" r="5.5" fill="#fbbf24"/>
+    <circle cx="62" cy="23" r="5.5" fill="#34d399"/>
+    <text x="50%%" y="28" text-anchor="middle" fill="#9aa8bd" font-family="Menlo, SFMono-Regular, Consolas, monospace" font-size="13">%s</text>
+    <g font-family="Menlo, SFMono-Regular, Consolas, monospace" font-size="13.5" xml:space="preserve">
+%s    </g>
+  </g>
 </svg>
-`, width, height, width, height, width-14, html.EscapeString(title), body.String())
+`, width, height, width, height, width-2, height-2, width-2, height-2, width-2, titleBar, titleBar, width-1, html.EscapeString(title), body.String())
+}
+
+type svgTextRun struct {
+	column int
+	text   string
+}
+
+func svgTextRuns(line string) []svgTextRun {
+	runes := []rune(line)
+	var runs []svgTextRun
+	for column := 0; column < len(runes); {
+		if runes[column] == ' ' {
+			column++
+			continue
+		}
+		start := column
+		for column < len(runes) && runes[column] != ' ' {
+			column++
+		}
+		runs = append(runs, svgTextRun{column: start, text: string(runes[start:column])})
+	}
+	return runs
+}
+
+func svgRunStyle(text string, line int, activeView string) (fill, weight string, opacity float64) {
+	token := strings.Trim(text, "│┃")
+	fill, weight, opacity = "#dbe4f0", "400", 1
+	if isBoxDrawing(text) {
+		return "#3b4964", "400", 1
+	}
+	switch token {
+	case "ERGO", "VIEW":
+		return "#c4b5fd", "700", 1
+	case "WORK", "DETAIL", "PREREQUISITES", "SELECTED", "UNLOCKS", "Description", "Depends", "Progress":
+		return "#a78bfa", "700", 1
+	case "READY":
+		return "#fbbf24", "700", 1
+	case "DOING":
+		return "#22d3ee", "700", 1
+	case "BLOCKED", "ERROR":
+		return "#fb7185", "700", 1
+	case "DONE":
+		return "#34d399", "600", 1
+	case "WAITING":
+		return "#94a3b8", "500", 1
+	case "CANCELED":
+		return "#64748b", "500", .8
+	case "○":
+		return "#fbbf24", "700", 1
+	case "◐":
+		return "#22d3ee", "700", 1
+	case "!", "⚠":
+		return "#fb7185", "700", 1
+	case "✓":
+		return "#34d399", "700", 1
+	case "×":
+		return "#64748b", "600", .8
+	case "◇", "◆", "•":
+		return "#a78bfa", "700", 1
+	case "2/4", "0/3", "1/2":
+		return "#a78bfa", "600", 1
+	}
+	if line == 0 {
+		switch token {
+		case activeView:
+			return "#c4b5fd", "700", 1
+		case "Overview", "Board", "Dependencies":
+			return "#8492a8", "500", .9
+		}
+	}
+	if line == 1 {
+		switch token {
+		case "ready":
+			return "#fbbf24", "600", 1
+		case "doing":
+			return "#22d3ee", "600", 1
+		case "blocked":
+			return "#fb7185", "600", 1
+		case "waiting":
+			return "#94a3b8", "500", 1
+		}
+	}
+	if strings.HasPrefix(token, "@") {
+		return "#22d3ee", "600", 1
+	}
+	if isFixtureID(token) || strings.Contains(token, "product-roadmap") {
+		return "#8492a8", "400", .9
+	}
+	if isFooterKey(token) {
+		return "#f1f5f9", "600", 1
+	}
+	return fill, weight, opacity
+}
+
+func isBoxDrawing(text string) bool {
+	for _, character := range text {
+		if !strings.ContainsRune("╭─╮│╰╯┌┐└┘├┤┬┴┼┃", character) {
+			return false
+		}
+	}
+	return text != ""
+}
+
+func isFixtureID(token string) bool {
+	switch token {
+	case "DESK01", "DLOAD1", "DVIEW1", "DEDIT1", "DWIN01", "REL001", "RDOCS1", "RTHEME", "RSIGN1", "TEAM01", "TDEMO1", "TREVW1", "LAUNCH":
+		return true
+	default:
+		return false
+	}
+}
+
+func isFooterKey(token string) bool {
+	switch token {
+	case "j/k", "tab", "enter", "a", "n/p", "n", "1/2/3", "/", "f", "e", "x", "?", "q":
+		return true
+	default:
+		return false
+	}
 }
 
 func assertGolden(t *testing.T, path, actual string) {

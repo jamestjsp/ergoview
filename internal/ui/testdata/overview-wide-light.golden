@@ -1,32 +1,32 @@
- ERGO VIEW  ergoview-demo                                                                              1 Overview  2 Board  3 Dependencies
- 1 ready  1 doing  1 blocked  1 waiting
+ ERGO VIEW  product-roadmap                                                                            1 Overview  2 Board  3 Dependencies
+ 2 ready  1 doing  1 blocked  3 waiting
 ╭────────────────────────────────────────────────────────╮╭────────────────────────────────────────────────────────────────────────────────╮
 │ WORK                                                   ││ DETAIL                                                                         │
-│ ! Wait for signing credentials         BLOCKED  BLOCKD ││ DOING  POLISH                                                                  │
-│ × Keep the discarded prototype        CANCELED  OLDTUI ││ Polish résumé & Crème brûlée views                                             │
-│ ◇ Ship Ergo View ✨                        2/5  SHIP01 ││ claimed by codex@local                                                         │
-│   ✓ Read append-only events              DONE  ADAPTER ││ container  Ship Ergo View ✨  SHIP01                                           │
-│   ✓ Design responsive shell               DONE  DESIGN ││                                                                                │
-│   · Document keyboard workflows        WAITING  DOCS01 ││ Depends on                                                                     │
-│   ◐ Polish résumé & Crème… DOING  POLISH  @codex@local ││   ← Read append-only events  ADAPTER                                           │
-│   ○ Package ev.exe for Windows          READY  WINDOWS ││   ← Design responsive shell  DESIGN                                            │
-│                                                        ││                                                                                │
-│                                                        ││ Unlocks                                                                        │
-│                                                        ││   → Document keyboard workflows  DOCS01                                        │
-│                                                        ││                                                                                │
+│ ◇ Desktop experience                       2/4  DESK01 ││ DOING  DEDIT1                                                                  │
+│   ◐ Add task editin… DOING  DEDIT1  @codex@workstation ││ Add task editing workflows                                                     │
+│   ✓ Load Ergo repositories                DONE  DLOAD1 ││ claimed by codex@workstation                                                   │
+│   ✓ Build board and dependency views      DONE  DVIEW1 ││ container  Desktop experience  DESK01                                          │
+│   ○ Package ev.exe for Windows           READY  DWIN01 ││                                                                                │
+│ · Publish the first public release     WAITING  LAUNCH ││ Depends on                                                                     │
+│ ◇ Release readiness                        0/3  REL001 ││   ← Load Ergo repositories  DLOAD1                                             │
+│   · Write install and keyboard guide   WAITING  RDOCS1 ││   ← Build board and dependency views  DVIEW1                                   │
+│   ! Configure release signing          BLOCKED  RSIGN1 ││                                                                                │
+│   ○ Polish light and dark themes         READY  RTHEME ││ Unlocks                                                                        │
+│ ◇ Team adoption                            1/2  TEAM01 ││   → Write install and keyboard guide  RDOCS1                                   │
+│   × Keep the discarded prototype      CANCELED  TDEMO1 ││   → Review editing flow with the team  TREVW1                                  │
+│   · Review editing flow with the team  WAITING  TREVW1 ││                                                                                │
 │                                                        ││ Description                                                                    │
 │                                                        ││                                                                                │
-│                                                        ││   ## Experience goals                                                          │
+│                                                        ││   ## Goal                                                                      │
 │                                                        ││                                                                                │
-│                                                        ││   • Keep epics, tasks, and dependencies visible.                               │
-│                                                        ││   • Preserve selection while external events arrive.                           │
-│                                                        ││   • Fit cleanly from  72  to  160  columns.                                    │
+│                                                        ││   Create fast, safe task editing without bypassing Ergo.                       │
 │                                                        ││                                                                                │
-│                                                        ││     program := tea.NewProgram(model)                                           │
+│                                                        ││   ### Done when                                                                │
 │                                                        ││                                                                                │
-│                                                        ││   The detail pane renders long Markdown without leaking terminal layout        │
-│                                                        ││   concerns into the task adapter. This final paragraph intentionally wraps     │
-│                                                        ││   across several lines so the visual fixture exercises realistic prose         │
-│                                                        ││   rather than a tiny placeholder.                                              │
+│                                                        ││   • Claim, complete, block, and release from the TUI.                          │
+│                                                        ││   • Keep command errors in context.                                            │
+│                                                        ││   • Reload the selected task after every mutation.                             │
+│                                                        ││                                                                                │
+│                                                        ││   Current focus: validate the complete flow on macOS, Linux, and Windows.      │
 ╰────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
  j/k move  ·  tab pane  ·  enter detail  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clear  ·  ? he
