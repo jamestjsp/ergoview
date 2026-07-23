@@ -175,6 +175,7 @@ func TestNoColorRemovesANSIColorSequences(t *testing.T) {
 }
 
 func TestTerminalBackgroundSelectsThemePalette(t *testing.T) {
+	t.Setenv("NO_COLOR", "")
 	model := testModel(t)
 	updated, _ := model.Update(tea.BackgroundColorMsg{Color: color.White})
 	model = updated.(Model)

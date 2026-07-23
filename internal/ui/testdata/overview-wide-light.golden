@@ -18,9 +18,9 @@
 │                                                        ││                                                                                │
 │                                                        ││   ## Experience goals                                                          │
 │                                                        ││                                                                                │
-│                                                        ││   • Keep **epics**, tasks, and dependencies visible.                           │
+│                                                        ││   • Keep epics, tasks, and dependencies visible.                               │
 │                                                        ││   • Preserve selection while external events arrive.                           │
-│                                                        ││   • Fit cleanly from 72 to 160 columns.                                        │
+│                                                        ││   • Fit cleanly from  72  to  160  columns.                                    │
 │                                                        ││                                                                                │
 │                                                        ││     program := tea.NewProgram(model)                                           │
 │                                                        ││                                                                                │

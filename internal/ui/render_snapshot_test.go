@@ -73,6 +73,8 @@ func TestDocumentationScreenshots(t *testing.T) {
 
 func renderFixtureModel(t *testing.T, noColor bool) Model {
 	t.Helper()
+	t.Setenv("TERM", "dumb")
+	t.Setenv("NO_COLOR", "")
 	root := t.TempDir()
 	ergoDir := filepath.Join(root, ".ergo")
 	if err := os.MkdirAll(ergoDir, 0o755); err != nil {
@@ -94,7 +96,9 @@ func renderFixtureModel(t *testing.T, noColor bool) Model {
 		t.Fatal(err)
 	}
 	snapshot.Root = "/workspace/ergoview-demo"
-	return New(snapshot, Options{NoColor: noColor})
+	model := New(snapshot, Options{NoColor: noColor})
+	t.Setenv("NO_COLOR", "1")
+	return model
 }
 
 func plainSnapshot(content string) string {
