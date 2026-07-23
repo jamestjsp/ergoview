@@ -1,0 +1,14 @@
+{"type":"new_task","ts":"2026-07-23T10:00:00Z","data":{"id":"EPIC01","uuid":"00000000-0000-0000-0000-000000000001","epic_id":"","state":"todo","title":"Authentication","body":"## Goal\nShip auth","created_at":"2026-07-23T10:00:00Z"}}
+{"type":"new_task","ts":"2026-07-23T10:01:00Z","data":{"id":"SCHEMA","uuid":"00000000-0000-0000-0000-000000000002","epic_id":"EPIC01","state":"todo","title":"Create schema","body":"","created_at":"2026-07-23T10:01:00Z"}}
+{"type":"new_task","ts":"2026-07-23T10:02:00Z","data":{"id":"TOKENS","uuid":"00000000-0000-0000-0000-000000000003","epic_id":"EPIC01","state":"todo","title":"Issue tokens","body":"Use rotating refresh tokens.","created_at":"2026-07-23T10:02:00Z"}}
+{"type":"new_task","ts":"2026-07-23T10:03:00Z","data":{"id":"DOCS01","uuid":"00000000-0000-0000-0000-000000000004","epic_id":"","state":"todo","title":"Document authentication","body":"","created_at":"2026-07-23T10:03:00Z"}}
+{"type":"new_task","ts":"2026-07-23T10:04:00Z","data":{"id":"ACTIVE","uuid":"00000000-0000-0000-0000-000000000005","epic_id":"","state":"doing","title":"Wire handlers","body":"","created_at":"2026-07-23T10:04:00Z"}}
+{"type":"claim","ts":"2026-07-23T10:04:01Z","data":{"id":"ACTIVE","agent_id":"codex@host","ts":"2026-07-23T10:04:01Z"}}
+{"type":"new_task","ts":"2026-07-23T10:05:00Z","data":{"id":"BLOCKD","uuid":"00000000-0000-0000-0000-000000000006","epic_id":"","state":"blocked","title":"Configure provider","body":"","created_at":"2026-07-23T10:05:00Z"}}
+{"type":"state","ts":"2026-07-23T10:06:00Z","data":{"id":"SCHEMA","state":"done","ts":"2026-07-23T10:06:00Z"}}
+{"type":"message","ts":"2026-07-23T10:06:01Z","data":{"task_id":"SCHEMA","kind":"done","text":"Migrated and verified.","ts":"2026-07-23T10:06:01Z"}}
+{"type":"result","ts":"2026-07-23T10:06:02Z","data":{"task_id":"SCHEMA","summary":"Migration","path":"db/migration.sql","sha256_at_attach":"abc123","mtime_at_attach":"2026-07-23T10:06:00Z","git_commit_at_attach":"deadbeef","ts":"2026-07-23T10:06:02Z"}}
+{"type":"link","ts":"2026-07-23T10:07:00Z","data":{"from_id":"TOKENS","to_id":"SCHEMA","type":"depends"}}
+{"type":"link","ts":"2026-07-23T10:07:01Z","data":{"from_id":"DOCS01","to_id":"EPIC01","type":"depends"}}
+{"type":"new_task","ts":"2026-07-23T10:08:00Z","data":{"id":"REMOVE","uuid":"00000000-0000-0000-0000-000000000007","epic_id":"","state":"done","title":"Old work","body":"","created_at":"2026-07-23T10:08:00Z"}}
+{"type":"tombstone","ts":"2026-07-23T10:09:00Z","data":{"id":"REMOVE","agent_id":"codex@host","ts":"2026-07-23T10:09:00Z"}}
