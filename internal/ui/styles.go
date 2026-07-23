@@ -30,6 +30,7 @@ type styles struct {
 	helpTitle lipgloss.Style
 	helpKey   lipgloss.Style
 	empty     lipgloss.Style
+	errorBox  lipgloss.Style
 }
 
 func newStyles(dark, noColor bool) styles {
@@ -107,5 +108,10 @@ func newStyles(dark, noColor bool) styles {
 		helpTitle: lipgloss.NewStyle().Bold(true).Foreground(brand),
 		helpKey:   lipgloss.NewStyle().Bold(true).Foreground(yellow),
 		empty:     lipgloss.NewStyle().Italic(true).Foreground(muted),
+		errorBox: lipgloss.NewStyle().
+			Foreground(red).
+			Border(lipgloss.NormalBorder(), false, false, false, true).
+			BorderForeground(red).
+			PaddingLeft(1),
 	}
 }

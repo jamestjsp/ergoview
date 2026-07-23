@@ -19,6 +19,10 @@ func (m Model) viewContent() string {
 	var body string
 	if m.help {
 		body = m.renderHelp()
+	} else if m.dialog != nil {
+		body = m.renderDialog()
+	} else if m.actionMenu {
+		body = m.renderActionMenu()
 	} else {
 		switch m.view {
 		case viewBoard:
@@ -210,13 +214,17 @@ func (m Model) renderFooter() string {
 		items := []string{
 			m.styles.footerKey.Render("j/k") + " move",
 			m.styles.footerKey.Render("1/2/3") + " views",
+			m.styles.footerKey.Render("a") + " actions",
+			m.styles.footerKey.Render("n") + " new",
 			m.styles.footerKey.Render("/") + " search",
 			m.styles.footerKey.Render("?") + " help",
 		}
-		return m.styles.footer.Width(m.width).Render(strings.Join(items, "  ·  "))
+		return m.renderFooterItems(items)
 	}
 	items := []string{
 		m.styles.footerKey.Render("j/k") + " move",
+		m.styles.footerKey.Render("a") + " actions",
+		m.styles.footerKey.Render("n/p") + " new",
 		m.styles.footerKey.Render("1/2/3") + " views",
 		m.styles.footerKey.Render("/") + " search",
 		m.styles.footerKey.Render("f") + " filter",
@@ -234,7 +242,13 @@ func (m Model) renderFooter() string {
 			items[0] = m.styles.footerKey.Render("j/k") + " scroll"
 		}
 	}
-	return m.styles.footer.Width(m.width).Render(strings.Join(items, "  ·  "))
+	return m.renderFooterItems(items)
+}
+
+func (m Model) renderFooterItems(items []string) string {
+	width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
+	content := ansi.Truncate(strings.Join(items, "  ·  "), width, "")
+	return m.styles.footer.Width(m.width).Render(content)
 }
 
 func (m Model) renderHelp() string {
@@ -249,6 +263,8 @@ func (m Model) renderHelp() string {
 		m.styles.helpKey.Render("f") + "              cycle state filter",
 		m.styles.helpKey.Render("e") + "              focus selected container",
 		m.styles.helpKey.Render("x") + "              clear search and filters",
+		m.styles.helpKey.Render("a") + "              selected task actions",
+		m.styles.helpKey.Render("n / p") + "          new task / container plan",
 		m.styles.helpKey.Render("tab") + "            switch pane",
 		m.styles.helpKey.Render("enter") + "          focus detail",
 		m.styles.helpKey.Render("?") + "              toggle help",

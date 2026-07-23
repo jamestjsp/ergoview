@@ -27,11 +27,13 @@ func run(args []string) error {
 	var (
 		start       string
 		agent       string
+		ergoBinary  string
 		showHelp    bool
 		showVersion bool
 	)
 	flags.StringVar(&start, "dir", "", "Ergo repository, child path, or .ergo directory")
 	flags.StringVar(&agent, "agent", "", "claim identity used by task actions")
+	flags.StringVar(&ergoBinary, "ergo", "ergo", "path to the Ergo 3 executable")
 	flags.BoolVar(&showHelp, "help", false, "show help")
 	flags.BoolVar(&showHelp, "h", false, "show help")
 	flags.BoolVar(&showVersion, "version", false, "show version")
@@ -39,7 +41,7 @@ func run(args []string) error {
 		return err
 	}
 	if flags.NArg() != 0 {
-		return errors.New("usage: ev [--dir path] [--agent identity]")
+		return errors.New("usage: ev [--dir path] [--agent identity] [--ergo path]")
 	}
 	if showHelp {
 		printHelp()
@@ -60,6 +62,7 @@ func run(args []string) error {
 	program := tea.NewProgram(ui.New(snapshot, ui.Options{
 		Agent:  agent,
 		Source: repository,
+		Runner: ergo.NewRunner(ergoBinary, repository.Root(), ""),
 	}))
 	_, err = program.Run()
 	return err
@@ -69,11 +72,12 @@ func printHelp() {
 	fmt.Print(`Ergo View — a responsive TUI companion for Ergo.
 
 Usage:
-  ev [--dir path] [--agent identity]
+  ev [--dir path] [--agent identity] [--ergo path]
 
 Flags:
   --dir path        Ergo repository, child path, or .ergo directory
   --agent identity  claim identity used by task actions
+  --ergo path       path to the Ergo 3 executable (default: ergo)
   -h, --help        show help
   --version         show version
 `)

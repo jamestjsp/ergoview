@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -52,33 +54,42 @@ type SnapshotSource interface {
 	Load() (ergo.Snapshot, error)
 }
 
+type CommandRunner interface {
+	Run(context.Context, io.Reader, ...string) (string, error)
+}
+
 type Options struct {
 	Agent   string
 	NoColor bool
 	Source  SnapshotSource
+	Runner  CommandRunner
 }
 
 type Model struct {
-	snapshot        ergo.Snapshot
-	source          SnapshotSource
-	rows            []row
-	selected        int
-	focus           focus
-	view            viewMode
-	filter          stateFilter
-	containerFilter string
-	searching       bool
-	search          textinput.Model
-	width           int
-	height          int
-	dark            bool
-	noColor         bool
-	help            bool
-	agent           string
-	styles          styles
-	detail          viewport.Model
-	status          string
-	loadErr         error
+	snapshot         ergo.Snapshot
+	source           SnapshotSource
+	runner           CommandRunner
+	rows             []row
+	selected         int
+	focus            focus
+	view             viewMode
+	filter           stateFilter
+	containerFilter  string
+	searching        bool
+	search           textinput.Model
+	actionMenu       bool
+	dialog           *dialog
+	pendingSelection string
+	width            int
+	height           int
+	dark             bool
+	noColor          bool
+	help             bool
+	agent            string
+	styles           styles
+	detail           viewport.Model
+	status           string
+	loadErr          error
 }
 
 func New(snapshot ergo.Snapshot, options Options) Model {
@@ -89,6 +100,7 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 	model := Model{
 		snapshot: snapshot,
 		source:   options.Source,
+		runner:   options.Runner,
 		dark:     true,
 		noColor:  noColor,
 		agent:    options.Agent,
@@ -118,6 +130,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = message.Width
 		m.height = message.Height
+		if m.dialog != nil {
+			m.dialog.resize(m.dialogWidth())
+		}
 		m.resizeDetail()
 		m.syncDetail()
 		return m, nil
@@ -125,6 +140,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.dark = message.IsDark()
 		m.styles = newStyles(m.dark, m.noColor)
 		m.syncSearchStyles()
+		if m.dialog != nil {
+			m.dialog.applyStyles(m.dark)
+		}
 		m.syncDetail()
 		return m, nil
 	case reloadTickMsg:
@@ -139,14 +157,29 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.loadErr = nil
 		if message.snapshot.Version != m.snapshot.Version {
-			selectedID := m.selectedID()
+			selectedID := m.pendingSelection
+			if selectedID == "" {
+				selectedID = m.selectedID()
+			}
 			m.snapshot = message.snapshot
 			m.rebuildRows(selectedID)
 			m.syncDetail()
+			m.pendingSelection = ""
 			m.status = "Reloaded external Ergo changes"
 		}
 		return m, nil
+	case actionResultMsg:
+		updated, command := m.handleActionResult(message)
+		return updated, command
 	case tea.KeyPressMsg:
+		if m.dialog != nil {
+			updated, command := m.updateDialog(message)
+			return updated, command
+		}
+		if m.actionMenu {
+			updated, command := m.updateActionMenu(message)
+			return updated, command
+		}
 		if m.searching {
 			updated, command := m.updateSearch(message)
 			return updated, command
@@ -192,6 +225,17 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 	switch key {
 	case "ctrl+c", "q":
 		return tea.Quit
+	case "n":
+		m.openDialog(actionNewTask)
+		return nil
+	case "p":
+		m.openDialog(actionNewPlan)
+		return nil
+	case "a":
+		if _, ok := m.selectedTask(); ok {
+			m.actionMenu = true
+		}
+		return nil
 	case "/":
 		m.searching = true
 		m.search.Focus()

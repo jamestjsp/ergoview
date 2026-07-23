@@ -10,7 +10,13 @@ import (
 
 func TestHelpIsComplete(t *testing.T) {
 	output := captureStdout(t, printHelp)
-	for _, expected := range []string{"ev [--dir path] [--agent identity]", "--dir", "--agent", "--version"} {
+	for _, expected := range []string{
+		"ev [--dir path] [--agent identity] [--ergo path]",
+		"--dir",
+		"--agent",
+		"--ergo",
+		"--version",
+	} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("help missing %q:\n%s", expected, output)
 		}
