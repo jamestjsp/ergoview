@@ -69,6 +69,100 @@ func TestKeyboardNavigationAndHelp(t *testing.T) {
 	}
 }
 
+func TestBoardKeepsWaitingSeparateFromBlocked(t *testing.T) {
+	model := resize(t, testModel(t), 140, 32)
+	model.setView(viewBoard)
+	groups := model.boardGroups()
+	if len(groups[1].tasks) != 1 || groups[1].tasks[0].ID != "DOCS01" {
+		t.Fatalf("waiting group = %#v", groups[1].tasks)
+	}
+	if len(groups[3].tasks) != 1 || groups[3].tasks[0].ID != "BLOCKD" {
+		t.Fatalf("blocked group = %#v", groups[3].tasks)
+	}
+	content := model.View().Content
+	plain := ansi.Strip(content)
+	for _, heading := range []string{"READY", "WAITING", "DOING", "BLOCKED", "DONE", "CANCELED"} {
+		if !strings.Contains(plain, heading) {
+			t.Fatalf("board missing %s:\n%s", heading, plain)
+		}
+	}
+	assertFits(t, content, 140, 32)
+}
+
+func TestSearchMatchesBodyAndPreservesSelection(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.rebuildRows("TOKENS")
+	updated, _ := model.Update(key("/"))
+	model = updated.(Model)
+	for _, character := range "rotating" {
+		updated, _ = model.Update(key(string(character)))
+		model = updated.(Model)
+	}
+	if selected := model.selectedID(); selected != "TOKENS" {
+		t.Fatalf("selected = %q, want TOKENS", selected)
+	}
+	if len(model.rows) != 2 || model.rows[0].id != "EPIC01" || model.rows[1].id != "TOKENS" {
+		t.Fatalf("filtered rows = %#v", model.rows)
+	}
+}
+
+func TestStateAndContainerFiltersCompose(t *testing.T) {
+	model := testModel(t)
+	model.rebuildRows("TOKENS")
+	model.filter = filterReady
+	model.containerFilter = "EPIC01"
+	model.rebuildRows("TOKENS")
+	if len(model.rows) != 2 || model.rows[0].id != "EPIC01" || model.rows[1].id != "TOKENS" {
+		t.Fatalf("filtered rows = %#v", model.rows)
+	}
+	model.clearFilters()
+	if model.filter != filterAll || model.containerFilter != "" || len(model.rows) != 6 {
+		t.Fatalf("clear filters left filter=%v container=%q rows=%d", model.filter, model.containerFilter, len(model.rows))
+	}
+}
+
+func TestViewsShareSelectionAndFitResponsiveLayouts(t *testing.T) {
+	for _, size := range []struct {
+		width  int
+		height int
+	}{
+		{width: 72, height: 24},
+		{width: 140, height: 32},
+	} {
+		model := resize(t, testModel(t), size.width, size.height)
+		model.rebuildRows("TOKENS")
+		for _, view := range []viewMode{viewBoard, viewDependencies, viewOverview} {
+			model.setView(view)
+			if selected := model.selectedID(); selected != "TOKENS" {
+				t.Fatalf("%dx%d view %d selected = %q", size.width, size.height, view, selected)
+			}
+			assertFits(t, model.View().Content, size.width, size.height)
+		}
+	}
+}
+
+func TestLiveReloadPreservesExistingSelection(t *testing.T) {
+	model := testModel(t)
+	model.rebuildRows("TOKENS")
+	updatedSnapshot := testSnapshot(t)
+	updatedSnapshot.Version = "external-change"
+	updated, _ := model.Update(snapshotLoadedMsg{snapshot: updatedSnapshot})
+	model = updated.(Model)
+	if selected := model.selectedID(); selected != "TOKENS" {
+		t.Fatalf("selected = %q, want TOKENS", selected)
+	}
+	if model.status == "" {
+		t.Fatal("reload status was not set")
+	}
+}
+
+func TestFuzzyMatchSupportsUnicode(t *testing.T) {
+	task := ergo.Task{Title: "Crème brûlée"}
+	if !matchesQuery(task, "cbr") || !matchesQuery(task, "brû") {
+		t.Fatal("unicode fuzzy match failed")
+	}
+}
+
 func TestNoColorRemovesANSIColorSequences(t *testing.T) {
 	snapshot := testSnapshot(t)
 	model := New(snapshot, Options{NoColor: true})

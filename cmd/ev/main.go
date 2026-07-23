@@ -57,7 +57,10 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	program := tea.NewProgram(ui.New(snapshot, ui.Options{Agent: agent}))
+	program := tea.NewProgram(ui.New(snapshot, ui.Options{
+		Agent:  agent,
+		Source: repository,
+	}))
 	_, err = program.Run()
 	return err
 }

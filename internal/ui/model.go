@@ -3,7 +3,11 @@ package ui
 import (
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
+	"time"
 
+	"charm.land/bubbles/v2/textinput"
 	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 
@@ -19,39 +23,77 @@ const (
 	focusDetail
 )
 
+type viewMode int
+
+const (
+	viewOverview viewMode = iota
+	viewBoard
+	viewDependencies
+)
+
+type stateFilter int
+
+const (
+	filterAll stateFilter = iota
+	filterActive
+	filterReady
+	filterWaiting
+	filterDoing
+	filterBlocked
+	filterClosed
+)
+
 type row struct {
 	id    string
 	depth int
 }
 
+type SnapshotSource interface {
+	Load() (ergo.Snapshot, error)
+}
+
 type Options struct {
 	Agent   string
 	NoColor bool
+	Source  SnapshotSource
 }
 
 type Model struct {
-	snapshot ergo.Snapshot
-	rows     []row
-	selected int
-	focus    focus
-	width    int
-	height   int
-	dark     bool
-	noColor  bool
-	help     bool
-	agent    string
-	styles   styles
-	detail   viewport.Model
+	snapshot        ergo.Snapshot
+	source          SnapshotSource
+	rows            []row
+	selected        int
+	focus           focus
+	view            viewMode
+	filter          stateFilter
+	containerFilter string
+	searching       bool
+	search          textinput.Model
+	width           int
+	height          int
+	dark            bool
+	noColor         bool
+	help            bool
+	agent           string
+	styles          styles
+	detail          viewport.Model
+	status          string
+	loadErr         error
 }
 
 func New(snapshot ergo.Snapshot, options Options) Model {
 	noColor := options.NoColor || os.Getenv("NO_COLOR") != ""
+	search := textinput.New()
+	search.Prompt = "/ "
+	search.CharLimit = 160
 	model := Model{
 		snapshot: snapshot,
+		source:   options.Source,
 		dark:     true,
 		noColor:  noColor,
 		agent:    options.Agent,
 		styles:   newStyles(true, noColor),
+		search:   search,
 		detail: viewport.New(
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
@@ -64,7 +106,11 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	return tea.RequestBackgroundColor
+	commands := []tea.Cmd{tea.RequestBackgroundColor}
+	if m.source != nil {
+		commands = append(commands, nextReload())
+	}
+	return tea.Batch(commands...)
 }
 
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
@@ -78,9 +124,33 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.BackgroundColorMsg:
 		m.dark = message.IsDark()
 		m.styles = newStyles(m.dark, m.noColor)
+		m.syncSearchStyles()
 		m.syncDetail()
 		return m, nil
+	case reloadTickMsg:
+		if m.source == nil {
+			return m, nil
+		}
+		return m, tea.Batch(loadSnapshot(m.source), nextReload())
+	case snapshotLoadedMsg:
+		if message.err != nil {
+			m.loadErr = message.err
+			return m, nil
+		}
+		m.loadErr = nil
+		if message.snapshot.Version != m.snapshot.Version {
+			selectedID := m.selectedID()
+			m.snapshot = message.snapshot
+			m.rebuildRows(selectedID)
+			m.syncDetail()
+			m.status = "Reloaded external Ergo changes"
+		}
+		return m, nil
 	case tea.KeyPressMsg:
+		if m.searching {
+			updated, command := m.updateSearch(message)
+			return updated, command
+		}
 		if command := m.updateKey(message); command != nil {
 			return m, command
 		}
@@ -122,6 +192,28 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 	switch key {
 	case "ctrl+c", "q":
 		return tea.Quit
+	case "/":
+		m.searching = true
+		m.search.Focus()
+		return nil
+	case "o", "1":
+		m.setView(viewOverview)
+		return nil
+	case "b", "2":
+		m.setView(viewBoard)
+		return nil
+	case "g", "3":
+		m.setView(viewDependencies)
+		return nil
+	case "f":
+		m.cycleFilter()
+		return nil
+	case "e":
+		m.filterToSelectedContainer()
+		return nil
+	case "x":
+		m.clearFilters()
+		return nil
 	case "?":
 		m.help = true
 		return nil
@@ -142,7 +234,7 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 			m.moveSelection(1)
 		case "k", "up":
 			m.moveSelection(-1)
-		case "g", "home":
+		case "home":
 			m.selectIndex(0)
 		case "G", "end":
 			m.selectIndex(len(m.rows) - 1)
@@ -160,6 +252,9 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 
 func (m *Model) updateMouseClick(message tea.MouseClickMsg) {
 	if message.Button != tea.MouseLeft || m.help {
+		return
+	}
+	if m.view != viewOverview {
 		return
 	}
 	contentY := message.Y - 2
@@ -210,21 +305,45 @@ func (m Model) selectedTask() (ergo.Task, bool) {
 	return m.snapshot.Task(m.rows[m.selected].id)
 }
 
+func (m Model) selectedID() string {
+	if task, ok := m.selectedTask(); ok {
+		return task.ID
+	}
+	return ""
+}
+
 func (m *Model) rebuildRows(selectedID string) {
 	m.rows = m.rows[:0]
-	var add func(string, int)
-	add = func(id string, depth int) {
+	var collect func(string, int) bool
+	collect = func(id string, depth int) bool {
 		task, ok := m.snapshot.Task(id)
 		if !ok {
-			return
+			return false
+		}
+		var childRows []row
+		for _, childID := range task.Children {
+			before := len(m.rows)
+			if collect(childID, depth+1) {
+				childRows = append(childRows, m.rows[before:]...)
+			}
+			m.rows = m.rows[:before]
+		}
+		if !m.taskMatches(task) && len(childRows) == 0 {
+			return false
 		}
 		m.rows = append(m.rows, row{id: id, depth: depth})
-		for _, childID := range task.Children {
-			add(childID, depth+1)
+		m.rows = append(m.rows, childRows...)
+		return true
+	}
+	if m.containerFilter != "" {
+		collect(m.containerFilter, 0)
+	} else {
+		for _, rootID := range m.snapshot.Roots {
+			collect(rootID, 0)
 		}
 	}
-	for _, rootID := range m.snapshot.Roots {
-		add(rootID, 0)
+	if m.view == viewBoard {
+		m.sortRowsForBoard()
 	}
 	m.selected = 0
 	if selectedID != "" {
@@ -235,6 +354,168 @@ func (m *Model) rebuildRows(selectedID string) {
 			}
 		}
 	}
+}
+
+func (m Model) taskMatches(task ergo.Task) bool {
+	if !matchesQuery(task, m.search.Value()) {
+		return false
+	}
+	if task.Container {
+		return m.filter == filterAll || m.filter == filterActive
+	}
+	switch m.filter {
+	case filterAll:
+		return true
+	case filterActive:
+		return task.State != ergo.StateDone && task.State != ergo.StateCanceled
+	case filterReady:
+		return task.Ready
+	case filterWaiting:
+		return task.Waiting
+	case filterDoing:
+		return task.State == ergo.StateDoing
+	case filterBlocked:
+		return task.State == ergo.StateBlocked || task.State == ergo.StateError
+	case filterClosed:
+		return task.State == ergo.StateDone || task.State == ergo.StateCanceled
+	default:
+		return true
+	}
+}
+
+func matchesQuery(task ergo.Task, query string) bool {
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" {
+		return true
+	}
+	value := strings.ToLower(strings.Join([]string{task.ID, task.Title, task.Body, task.ClaimedBy}, " "))
+	if strings.Contains(value, query) {
+		return true
+	}
+	queryRunes := []rune(query)
+	index := 0
+	for _, character := range value {
+		if index < len(queryRunes) && character == queryRunes[index] {
+			index++
+		}
+	}
+	return index == len(queryRunes)
+}
+
+func (m *Model) sortRowsForBoard() {
+	order := func(task ergo.Task) int {
+		switch {
+		case task.Container:
+			return 7
+		case task.Ready:
+			return 0
+		case task.Waiting:
+			return 1
+		case task.State == ergo.StateDoing:
+			return 2
+		case task.State == ergo.StateBlocked || task.State == ergo.StateError:
+			return 3
+		case task.State == ergo.StateDone:
+			return 4
+		case task.State == ergo.StateCanceled:
+			return 5
+		default:
+			return 6
+		}
+	}
+	sort.SliceStable(m.rows, func(left, right int) bool {
+		leftTask, _ := m.snapshot.Task(m.rows[left].id)
+		rightTask, _ := m.snapshot.Task(m.rows[right].id)
+		leftOrder, rightOrder := order(leftTask), order(rightTask)
+		if leftOrder == rightOrder {
+			return leftTask.ID < rightTask.ID
+		}
+		return leftOrder < rightOrder
+	})
+}
+
+func (m *Model) setView(view viewMode) {
+	selectedID := m.selectedID()
+	m.view = view
+	m.focus = focusOutline
+	m.rebuildRows(selectedID)
+	m.syncDetail()
+}
+
+func (m *Model) cycleFilter() {
+	selectedID := m.selectedID()
+	m.filter = (m.filter + 1) % (filterClosed + 1)
+	m.rebuildRows(selectedID)
+	m.syncDetail()
+}
+
+func (m *Model) filterToSelectedContainer() {
+	task, ok := m.selectedTask()
+	if !ok {
+		return
+	}
+	selectedID := task.ID
+	switch {
+	case task.Container:
+		m.containerFilter = task.ID
+	case task.ParentID != "":
+		m.containerFilter = task.ParentID
+	default:
+		return
+	}
+	m.rebuildRows(selectedID)
+	m.syncDetail()
+}
+
+func (m *Model) clearFilters() {
+	selectedID := m.selectedID()
+	m.filter = filterAll
+	m.containerFilter = ""
+	m.search.SetValue("")
+	m.rebuildRows(selectedID)
+	m.syncDetail()
+}
+
+func (m Model) filterLabel() string {
+	switch m.filter {
+	case filterActive:
+		return "active"
+	case filterReady:
+		return "ready"
+	case filterWaiting:
+		return "waiting"
+	case filterDoing:
+		return "doing"
+	case filterBlocked:
+		return "blocked"
+	case filterClosed:
+		return "closed"
+	default:
+		return "all"
+	}
+}
+
+func (m *Model) updateSearch(message tea.KeyPressMsg) (Model, tea.Cmd) {
+	switch message.String() {
+	case "esc", "enter":
+		m.searching = false
+		m.search.Blur()
+		return *m, nil
+	}
+	selectedID := m.selectedID()
+	var command tea.Cmd
+	m.search, command = m.search.Update(message)
+	m.rebuildRows(selectedID)
+	m.syncDetail()
+	return *m, command
+}
+
+func (m *Model) syncSearchStyles() {
+	if m.dark {
+		m.search.SetStyles(textinput.DefaultDarkStyles())
+		return
+	}
+	m.search.SetStyles(textinput.DefaultLightStyles())
 }
 
 func (m *Model) resizeDetail() {
@@ -257,4 +538,24 @@ func (m Model) paneWidths() (int, int) {
 
 func (m Model) contentHeight() int {
 	return max(1, m.height-3)
+}
+
+type reloadTickMsg time.Time
+
+type snapshotLoadedMsg struct {
+	snapshot ergo.Snapshot
+	err      error
+}
+
+func nextReload() tea.Cmd {
+	return tea.Tick(time.Second, func(value time.Time) tea.Msg {
+		return reloadTickMsg(value)
+	})
+}
+
+func loadSnapshot(source SnapshotSource) tea.Cmd {
+	return func() tea.Msg {
+		snapshot, err := source.Load()
+		return snapshotLoadedMsg{snapshot: snapshot, err: err}
+	}
 }

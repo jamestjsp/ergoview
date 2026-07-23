@@ -19,19 +19,28 @@ func (m Model) viewContent() string {
 	var body string
 	if m.help {
 		body = m.renderHelp()
-	} else if m.width < narrowBreakpoint {
-		if m.focus == focusDetail {
-			body = m.renderDetailPane(m.width)
-		} else {
-			body = m.renderOutlinePane(m.width)
-		}
 	} else {
-		leftWidth, rightWidth := m.paneWidths()
-		body = lipgloss.JoinHorizontal(
-			lipgloss.Top,
-			m.renderOutlinePane(leftWidth),
-			m.renderDetailPane(rightWidth),
-		)
+		switch m.view {
+		case viewBoard:
+			body = m.renderBoard()
+		case viewDependencies:
+			body = m.renderDependencies()
+		default:
+			if m.width < narrowBreakpoint {
+				if m.focus == focusDetail {
+					body = m.renderDetailPane(m.width)
+				} else {
+					body = m.renderOutlinePane(m.width)
+				}
+			} else {
+				leftWidth, rightWidth := m.paneWidths()
+				body = lipgloss.JoinHorizontal(
+					lipgloss.Top,
+					m.renderOutlinePane(leftWidth),
+					m.renderDetailPane(rightWidth),
+				)
+			}
+		}
 	}
 	footer := m.renderFooter()
 	return m.styles.app.Render(lipgloss.JoinVertical(lipgloss.Left, header, body, footer))
@@ -43,21 +52,54 @@ func (m Model) renderHeader() string {
 		root = m.snapshot.Root
 	}
 	left := m.styles.brand.Render("ERGO VIEW") + "  " + m.styles.path.Render(root)
-	tabs := m.styles.activeTab.Render("Overview") +
-		m.styles.tab.Render("Board") +
-		m.styles.tab.Render("Dependencies")
+	labels := []string{"1 Overview", "2 Board", "3 Dependencies"}
+	if m.width < narrowBreakpoint {
+		labels = []string{"1 Outline", "2 Board", "3 Deps"}
+	}
+	tabs := m.renderTab(viewOverview, labels[0]) +
+		m.renderTab(viewBoard, labels[1]) +
+		m.renderTab(viewDependencies, labels[2])
 	headerContentWidth := max(1, m.width-m.styles.header.GetHorizontalFrameSize())
+	left = ansi.Truncate(left, max(1, headerContentWidth-lipgloss.Width(tabs)-1), "…")
 	gap := max(1, headerContentWidth-lipgloss.Width(left)-lipgloss.Width(tabs))
 	first := m.styles.header.Width(m.width).Render(left + strings.Repeat(" ", gap) + tabs)
+	status := m.renderStatus()
+	return first + "\n" + m.styles.header.Width(m.width).Render(status)
+}
+
+func (m Model) renderTab(view viewMode, label string) string {
+	if m.view == view {
+		return m.styles.activeTab.Render(label)
+	}
+	return m.styles.tab.Render(label)
+}
+
+func (m Model) renderStatus() string {
+	if m.searching {
+		return m.search.View()
+	}
 	summary := m.snapshot.Summary
-	status := fmt.Sprintf(
-		"%s  %s  %s  %s",
+	parts := []string{
 		m.styles.ready.Render(fmt.Sprintf("%d ready", summary.Ready)),
 		m.styles.doing.Render(fmt.Sprintf("%d doing", summary.Doing)),
 		m.styles.blocked.Render(fmt.Sprintf("%d blocked", summary.Blocked)),
 		m.styles.waiting.Render(fmt.Sprintf("%d waiting", summary.Waiting)),
-	)
-	return first + "\n" + m.styles.header.Width(m.width).Render(status)
+	}
+	if query := strings.TrimSpace(m.search.Value()); query != "" {
+		parts = append(parts, m.styles.metadata.Render("search:"+query))
+	}
+	if m.filter != filterAll {
+		parts = append(parts, m.styles.metadata.Render("filter:"+m.filterLabel()))
+	}
+	if m.containerFilter != "" {
+		parts = append(parts, m.styles.metadata.Render("container:"+m.containerFilter))
+	}
+	if m.loadErr != nil {
+		parts = append(parts, m.styles.failed.Render("reload failed: "+m.loadErr.Error()))
+	} else if m.status != "" {
+		parts = append(parts, m.styles.done.Render(m.status))
+	}
+	return strings.Join(parts, "  ")
 }
 
 func (m Model) renderOutlinePane(width int) string {
@@ -164,15 +206,33 @@ func (m Model) renderDetailPane(width int) string {
 }
 
 func (m Model) renderFooter() string {
+	if m.width < narrowBreakpoint {
+		items := []string{
+			m.styles.footerKey.Render("j/k") + " move",
+			m.styles.footerKey.Render("1/2/3") + " views",
+			m.styles.footerKey.Render("/") + " search",
+			m.styles.footerKey.Render("?") + " help",
+		}
+		return m.styles.footer.Width(m.width).Render(strings.Join(items, "  ·  "))
+	}
 	items := []string{
 		m.styles.footerKey.Render("j/k") + " move",
-		m.styles.footerKey.Render("tab") + " pane",
-		m.styles.footerKey.Render("enter") + " detail",
+		m.styles.footerKey.Render("1/2/3") + " views",
+		m.styles.footerKey.Render("/") + " search",
+		m.styles.footerKey.Render("f") + " filter",
+		m.styles.footerKey.Render("e") + " epic",
+		m.styles.footerKey.Render("x") + " clear",
 		m.styles.footerKey.Render("?") + " help",
 		m.styles.footerKey.Render("q") + " quit",
 	}
-	if m.focus == focusDetail {
-		items[0] = m.styles.footerKey.Render("j/k") + " scroll"
+	if m.view == viewOverview {
+		items = append(items[:1], append([]string{
+			m.styles.footerKey.Render("tab") + " pane",
+			m.styles.footerKey.Render("enter") + " detail",
+		}, items[1:]...)...)
+		if m.focus == focusDetail {
+			items[0] = m.styles.footerKey.Render("j/k") + " scroll"
+		}
 	}
 	return m.styles.footer.Width(m.width).Render(strings.Join(items, "  ·  "))
 }
@@ -182,8 +242,13 @@ func (m Model) renderHelp() string {
 		m.styles.helpTitle.Render("Ergo View keys"),
 		"",
 		m.styles.helpKey.Render("j / k, ↑ / ↓") + "   move or scroll",
-		m.styles.helpKey.Render("g / G") + "          first / last task",
+		m.styles.helpKey.Render("home / G") + "       first / last task",
 		m.styles.helpKey.Render("page up/down") + "   move one page",
+		m.styles.helpKey.Render("1 / 2 / 3") + "      overview / board / dependencies",
+		m.styles.helpKey.Render("/") + "              fuzzy search",
+		m.styles.helpKey.Render("f") + "              cycle state filter",
+		m.styles.helpKey.Render("e") + "              focus selected container",
+		m.styles.helpKey.Render("x") + "              clear search and filters",
 		m.styles.helpKey.Render("tab") + "            switch pane",
 		m.styles.helpKey.Render("enter") + "          focus detail",
 		m.styles.helpKey.Render("?") + "              toggle help",
