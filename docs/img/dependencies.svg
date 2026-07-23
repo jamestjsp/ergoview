@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1168" height="634" viewBox="0 0 1168 634">
+  <rect width="100%" height="100%" rx="14" fill="#0b1020"/>
+  <path d="M14 0h1154q14 0 14 14v28H0V14Q0 0 14 0" fill="#171d30"/>
+  <circle cx="22" cy="21" r="5" fill="#fb7185"/>
+  <circle cx="40" cy="21" r="5" fill="#fbbf24"/>
+  <circle cx="58" cy="21" r="5" fill="#34d399"/>
+  <text x="50%" y="26" text-anchor="middle" fill="#94a3b8" font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13">Ergo View — dependencies</text>
+  <g font-family="ui-monospace, SFMono-Regular, Consolas, monospace" font-size="13" xml:space="preserve">
+  <text x="24" y="83" fill="#c4b5fd"> ERGO VIEW  ergoview-demo                                                                              1 Overview  2 Board  3 Dependencies  </text>
+  <text x="24" y="100" fill="#c4b5fd"> 1 ready  1 doing  1 blocked  1 waiting                                                                                                     </text>
+  <text x="24" y="117" fill="#e2e8f0">╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮</text>
+  <text x="24" y="134" fill="#e2e8f0">│ PREREQUISITES                                 SELECTED                                    UNLOCKS                                        │</text>
+  <text x="24" y="151" fill="#e2e8f0">│  ✓ Read append-only events  DONE  ADAPTER                                                  · Document keyboard workflows  WAITING  DOC…  │</text>
+  <text x="24" y="168" fill="#e2e8f0">│  ✓ Design responsive shell  DONE  DESIGN      ◐ Polish résumé &amp; Crème brûlée views  DOIN…                                                │</text>
+  <text x="24" y="185" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="202" fill="#e2e8f0">│                                              2 prerequisite · 1 dependent                                                                │</text>
+  <text x="24" y="219" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="236" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="253" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="270" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="287" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="304" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="321" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="338" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="355" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="372" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="389" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="406" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="423" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="440" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="457" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="474" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="491" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="508" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="525" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="542" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="559" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="576" fill="#e2e8f0">│                                                                                                                                          │</text>
+  <text x="24" y="593" fill="#e2e8f0">╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯</text>
+  <text x="24" y="610" fill="#e2e8f0"> j/k move  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clear  ·  ? help  ·  q quit                  </text>
+  </g>
+</svg>

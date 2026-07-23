@@ -1,0 +1,24 @@
+ ERGO VIEW  ergoview-demo                   1 Outline  2 Board  3 Deps
+ 1 ready  1 doing  1 blocked  1 waiting
+╭──────────────────────────────────────────────────────────────────────╮
+│ WORK                                                                 │
+│ ! Wait for signing credentials                       BLOCKED  BLOCKD │
+│ × Keep the discarded prototype                      CANCELED  OLDTUI │
+│ ◇ Ship Ergo View ✨                                      2/5  SHIP01 │
+│   ✓ Read append-only events                            DONE  ADAPTER │
+│   ✓ Design responsive shell                             DONE  DESIGN │
+│   · Document keyboard workflows                      WAITING  DOCS01 │
+│   ◐ Polish résumé & Crème brûlée views   DOING  POLISH  @codex@local │
+│   ○ Package ev.exe for Windows                        READY  WINDOWS │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+╰──────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  1/2/3 views  ·  a actions  ·  n new  ·  / search  ·  ? he

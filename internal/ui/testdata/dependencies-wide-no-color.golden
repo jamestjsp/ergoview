@@ -1,0 +1,32 @@
+ ERGO VIEW  ergoview-demo                                                                              1 Overview  2 Board  3 Dependencies
+ 1 ready  1 doing  1 blocked  1 waiting
+╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ PREREQUISITES                                 SELECTED                                    UNLOCKS                                        │
+│  ✓ Read append-only events  DONE  ADAPTER                                                  · Document keyboard workflows  WAITING  DOC…  │
+│  ✓ Design responsive shell  DONE  DESIGN      ◐ Polish résumé & Crème brûlée views  DOIN…                                                │
+│                                                                                                                                          │
+│                                              2 prerequisite · 1 dependent                                                                │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+│                                                                                                                                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clear  ·  ? help  ·  q quit

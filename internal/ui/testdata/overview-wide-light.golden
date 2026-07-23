@@ -1,0 +1,32 @@
+ ERGO VIEW  ergoview-demo                                                                              1 Overview  2 Board  3 Dependencies
+ 1 ready  1 doing  1 blocked  1 waiting
+╭────────────────────────────────────────────────────────╮╭────────────────────────────────────────────────────────────────────────────────╮
+│ WORK                                                   ││ DETAIL                                                                         │
+│ ! Wait for signing credentials         BLOCKED  BLOCKD ││ DOING  POLISH                                                                  │
+│ × Keep the discarded prototype        CANCELED  OLDTUI ││ Polish résumé & Crème brûlée views                                             │
+│ ◇ Ship Ergo View ✨                        2/5  SHIP01 ││ claimed by codex@local                                                         │
+│   ✓ Read append-only events              DONE  ADAPTER ││ container  Ship Ergo View ✨  SHIP01                                           │
+│   ✓ Design responsive shell               DONE  DESIGN ││                                                                                │
+│   · Document keyboard workflows        WAITING  DOCS01 ││ Depends on                                                                     │
+│   ◐ Polish résumé & Crème… DOING  POLISH  @codex@local ││   ← Read append-only events  ADAPTER                                           │
+│   ○ Package ev.exe for Windows          READY  WINDOWS ││   ← Design responsive shell  DESIGN                                            │
+│                                                        ││                                                                                │
+│                                                        ││ Unlocks                                                                        │
+│                                                        ││   → Document keyboard workflows  DOCS01                                        │
+│                                                        ││                                                                                │
+│                                                        ││ Description                                                                    │
+│                                                        ││                                                                                │
+│                                                        ││   ## Experience goals                                                          │
+│                                                        ││                                                                                │
+│                                                        ││   • Keep **epics**, tasks, and dependencies visible.                           │
+│                                                        ││   • Preserve selection while external events arrive.                           │
+│                                                        ││   • Fit cleanly from 72 to 160 columns.                                        │
+│                                                        ││                                                                                │
+│                                                        ││     program := tea.NewProgram(model)                                           │
+│                                                        ││                                                                                │
+│                                                        ││   The detail pane renders long Markdown without leaking terminal layout        │
+│                                                        ││   concerns into the task adapter. This final paragraph intentionally wraps     │
+│                                                        ││   across several lines so the visual fixture exercises realistic prose         │
+│                                                        ││   rather than a tiny placeholder.                                              │
+╰────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  tab pane  ·  enter detail  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clear  ·  ? he

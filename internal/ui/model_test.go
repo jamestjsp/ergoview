@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -170,6 +171,15 @@ func TestNoColorRemovesANSIColorSequences(t *testing.T) {
 	content := model.View().Content
 	if strings.Contains(content, "\x1b[38;") || strings.Contains(content, "\x1b[48;") {
 		t.Fatalf("NO_COLOR view contains ANSI color sequences:\n%q", content)
+	}
+}
+
+func TestTerminalBackgroundSelectsThemePalette(t *testing.T) {
+	model := testModel(t)
+	updated, _ := model.Update(tea.BackgroundColorMsg{Color: color.White})
+	model = updated.(Model)
+	if model.dark {
+		t.Fatal("white terminal background did not select light theme")
 	}
 }
 

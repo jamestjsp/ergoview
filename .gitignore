@@ -2,6 +2,9 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 # Binaries for programs and plugins
+ev
+bin/
+dist/
 *.exe
 *.exe~
 *.dll
@@ -23,6 +26,10 @@ profile.cov
 # Go workspace file
 go.work
 go.work.sum
+
+# Local Go build caches
+.gocache/
+.gomodcache/
 
 # env file
 .env

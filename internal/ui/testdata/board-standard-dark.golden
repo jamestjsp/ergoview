@@ -1,0 +1,30 @@
+ ERGO VIEW  ergoview-demo                                                1 Overview  2 Board  3 Dependencies
+ 1 ready  1 doing  1 blocked  1 waiting
+╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ READY  1                           DOING  1                           DONE  2                              │
+│  ○ Package ev.exe for Windows  WI…  ◐ Polish résumé & Crème brûlée v…  ✓ Read append-only events  ADAPTER  │
+│                                                                        ✓ Design responsive shell  DESIGN   │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│ WAITING  1                         BLOCKED  1                         CANCELED  1                          │
+│  · Document keyboard workflows  D…  ! Wait for signing credentials  …  × Keep the discarded prototype  O…  │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clear  ·  ? he
