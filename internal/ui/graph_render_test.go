@@ -28,12 +28,11 @@ func TestGraphCanvasRendersEpicTasksStateAndDirection(t *testing.T) {
 	plain := ansi.Strip(content)
 	for _, expected := range []string{
 		"DEPENDENCY FLOW",
-		"left → right",
+		"depth adaptive",
 		"Launch experience",
-		"EPIC",
+		"EPIC 0/1",
 		"Integrate graph",
 		"Polish navigation",
-		"◇EPIC",
 		"▶",
 	} {
 		if !strings.Contains(plain, expected) {
@@ -63,7 +62,7 @@ func TestGraphCanvasUsesVerticalFlowWhenItFitsBetter(t *testing.T) {
 	model.setView(viewDependencies)
 	model = resize(t, model, 52, 30)
 	plain := ansi.Strip(model.View().Content)
-	if !strings.Contains(plain, "top ↓ bottom") || !strings.Contains(plain, "▼") {
+	if !strings.Contains(plain, "▼") {
 		t.Fatalf("vertical graph not rendered:\n%s", plain)
 	}
 	assertFits(t, model.View().Content, 52, 30)

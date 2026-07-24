@@ -1,7 +1,7 @@
  ERGO VIEW  product-roadmap                                    1 Overview  2 Board  3 Dependencies
  2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ DEPENDENCY FLOW                               adaptive  ·  left → right  ·  4 shown  ·  6 hidden │
+│ DEPENDENCY FLOW                                          depth adaptive  ·  4 shown  ·  6 hidden │
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │
@@ -9,16 +9,16 @@
 │                                                                                                  │
 │                                                                                                  │
 │ ╭✓ Load Ergo repositor…╮                                                                         │
-│ │ DLOAD1 DONE ◇DESK01  │────┬────────────────────────────╮                                       │
+│ │ DLOAD1 DONE          │────┬────────────────────────────╮                                       │
 │ ╰──────────────────────╯    │                            │                                       │
 │                             │                            │                                       │
-│ ╭✓ Build board and dep…╮    │┏◐ Add task editing wo…┓    │╭… +6 DOWNSTREAM┄┄┄┄┄┄┄╮               │
-│ │ DVIEW1 DONE ◇DESK01  │────▶┃ DEDIT1 DOING ◇DESK01 ┃────▶┆ more context         ┆               │
+│ ╭✓ Build board and dep…╮    │┏◐ Add task editing wo…┓    │╭+6 downstream┄┄┄┄┄┄┄┄┄╮               │
+│ │ DVIEW1 DONE          │────▶┃ DEDIT1 DOING         ┃────▶┆ d expands            ┆               │
 │ ╰──────────────────────╯    │┗━━━━━━━━━━━━━━━━━━━━━━┛     ╰┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄╯               │
 │                             │                                                                    │
-│ ╔◆ Graph foundations═══╗    │                                                                    │
-│ ║ CORE01 EPIC 1/1      ║────╯                                                                    │
-│ ╚══════════════════════╝                                                                         │
+│ ╭◆ Graph foundations───╮    │                                                                    │
+│ │ CORE01 EPIC 1/1      │────╯                                                                    │
+│ ╰──────────────────────╯                                                                         │
 │                                                                                                  │
 │                                                                                                  │
 │                                                                                                  │

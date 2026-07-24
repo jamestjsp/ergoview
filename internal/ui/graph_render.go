@@ -99,16 +99,12 @@ func (m Model) renderGraphHeader(layout dependencyGraphLayout, width int) string
 			hiddenCount += len(node.HiddenIDs)
 		}
 	}
-	flow := "left → right"
-	if layout.Orientation == graphVertical {
-		flow = "top ↓ bottom"
-	}
-	summary := fmt.Sprintf("%s  ·  %s  ·  %d shown", layout.Scope.label(), flow, nodeCount)
+	summary := fmt.Sprintf("depth %s  ·  %d shown", layout.Scope.label(), nodeCount)
 	if hiddenCount > 0 {
 		summary += fmt.Sprintf("  ·  %d hidden", hiddenCount)
 	}
 	if selectedID := m.selectedID(); layout.FocusID != "" && layout.FocusID != selectedID {
-		summary = fmt.Sprintf("focus %s  ·  selected %s  ·  %s", layout.FocusID, selectedID, summary)
+		summary = fmt.Sprintf("focus %s  ·  %s", layout.FocusID, summary)
 	}
 	left := m.styles.paneTitle.Render("DEPENDENCY FLOW")
 	right := m.styles.metadata.Render(summary)
@@ -317,20 +313,14 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, selected, foc
 	if node.Task.Container {
 		borderRole = graphRoleEpic
 		textRole = graphRoleEpic
-		horizontal = "═"
-		topLeft, topRight = "╔", "╗"
-		bottomLeft, bottomRight = "╚", "╝"
-		vertical = "║"
 	}
 	if selected {
 		borderRole = graphRoleFocus
 		textRole = graphRoleFocus
-		if !node.Task.Container {
-			horizontal = "━"
-			topLeft, topRight = "┏", "┓"
-			bottomLeft, bottomRight = "┗", "┛"
-			vertical = "┃"
-		}
+		horizontal = "━"
+		topLeft, topRight = "┏", "┓"
+		bottomLeft, bottomRight = "┗", "┛"
+		vertical = "┃"
 		c.fillRect(rect, " ", graphRoleFocus)
 	} else if focused {
 		borderRole = graphRoleEpic
@@ -349,8 +339,12 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, selected, foc
 	c.drawText(rect.X+1, rect.Y, symbol, stateRole, 1)
 	c.drawText(rect.X+2, rect.Y, " "+node.Task.Title, textRole, rect.Width-3)
 
+	idRole := graphRoleMetadata
+	if selected {
+		idRole = graphRoleFocus
+	}
 	x := rect.X + 2
-	c.drawText(x, rect.Y+1, node.Task.ID, textRole, rect.Width-3)
+	c.drawText(x, rect.Y+1, node.Task.ID, idRole, rect.Width-3)
 	x += lipgloss.Width(node.Task.ID) + 1
 	if node.Task.Container {
 		progress := fmt.Sprintf("EPIC %d/%d", completedChildren(snapshot, node.Task), len(node.Task.Children))
@@ -358,27 +352,18 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, selected, foc
 		return
 	}
 	c.drawText(x, rect.Y+1, label, stateRole, rect.X+rect.Width-1-x)
-	x += lipgloss.Width(label) + 1
-	if node.Task.ParentID != "" {
-		parent := "◇" + node.Task.ParentID
-		role := graphRoleEpic
-		if selected {
-			role = graphRoleFocus
-		}
-		c.drawText(x, rect.Y+1, parent, role, rect.X+rect.Width-1-x)
-	}
 }
 
 func (c *graphCanvas) drawOverflowNode(node dependencyGraphNode) {
 	rect := node.Rect
 	c.drawBox(rect, "╭", "╮", "╰", "╯", "┄", "┆", graphRoleMetadata)
-	direction := "UPSTREAM"
+	direction := "upstream"
 	if node.Kind == graphDownstreamOverflow {
-		direction = "DOWNSTREAM"
+		direction = "downstream"
 	}
-	title := fmt.Sprintf("… +%d %s", len(node.HiddenIDs), direction)
+	title := fmt.Sprintf("+%d %s", len(node.HiddenIDs), direction)
 	c.drawText(rect.X+1, rect.Y, title, graphRoleMetadata, rect.Width-2)
-	c.drawText(rect.X+2, rect.Y+1, "more context", graphRoleMetadata, rect.Width-3)
+	c.drawText(rect.X+2, rect.Y+1, "d expands", graphRoleMetadata, rect.Width-3)
 }
 
 func (c *graphCanvas) drawBox(

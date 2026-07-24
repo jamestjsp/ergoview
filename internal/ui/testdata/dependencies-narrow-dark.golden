@@ -1,21 +1,21 @@
  ERGO VIEW  product-roadmap                 1 Outline  2 Board  3 Deps
  2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────╮
-│ DEPENDENCY FLOW   adaptive  ·  left → right  ·  4 shown  ·  6 hidden │
+│ DEPENDENCY FLOW              depth adaptive  ·  4 shown  ·  6 hidden │
 │                                                                      │
 │                                                                      │
 │                                                                      │
 │ ╭✓ Load Ergo re…╮                                                    │
-│ │ DLOAD1 DONE ◇…│────┬─────────────────────╮                         │
+│ │ DLOAD1 DONE   │────┬─────────────────────╮                         │
 │ ╰───────────────╯    │                     │                         │
 │                      │                     │                         │
-│ ╭✓ Build board …╮    │┏◐ Add task edi…┓    │╭… +6 DOWNSTREAM╮        │
-│ │ DVIEW1 DONE ◇…│────▶┃ DEDIT1 DOING …┃────▶┆ more context  ┆        │
+│ ╭✓ Build board …╮    │┏◐ Add task edi…┓    │╭+6 downstream┄┄╮        │
+│ │ DVIEW1 DONE   │────▶┃ DEDIT1 DOING  ┃────▶┆ d expands     ┆        │
 │ ╰───────────────╯    │┗━━━━━━━━━━━━━━━┛     ╰┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄╯        │
 │                      │                                               │
-│ ╔◆ Graph founda…╗    │                                               │
-│ ║ CORE01 EPIC 1…║────╯                                               │
-│ ╚═══════════════╝                                                    │
+│ ╭◆ Graph founda…╮    │                                               │
+│ │ CORE01 EPIC 1…│────╯                                               │
+│ ╰───────────────╯                                                    │
 │                                                                      │
 │                                                                      │
 │                                                                      │

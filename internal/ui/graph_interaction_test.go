@@ -30,7 +30,7 @@ func TestGraphNavigationMovesSpatiallyAndTargetsActions(t *testing.T) {
 		t.Fatalf("action target = %#v, found=%v", actionTarget, ok)
 	}
 	plain := ansi.Strip(model.View().Content)
-	if !strings.Contains(plain, "focus B") || !strings.Contains(plain, "selected D") || !strings.Contains(plain, "◎") {
+	if !strings.Contains(plain, "focus B") || !strings.Contains(plain, "◎") {
 		t.Fatalf("focus and selection context missing:\n%s", plain)
 	}
 

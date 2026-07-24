@@ -290,7 +290,7 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 
 func isBoxDrawing(text string) bool {
 	for _, character := range text {
-		if !strings.ContainsRune("╭─╮│╰╯┌┐└┘├┤┬┴┼┃┏┓┗┛━╔╗╚╝═║┄┆▶▼", character) {
+		if !strings.ContainsRune("╭─╮│╰╯┌┐└┘├┤┬┴┼┃┏┓┗┛━┄┆▶▼", character) {
 			return false
 		}
 	}

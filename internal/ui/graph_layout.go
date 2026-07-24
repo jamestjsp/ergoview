@@ -768,20 +768,6 @@ func cloneIDSet(source map[string]bool) map[string]bool {
 	return clone
 }
 
-func uniqueGraphIDs(ids []string, order map[string]int) []string {
-	seen := make(map[string]bool, len(ids))
-	result := make([]string, 0, len(ids))
-	for _, id := range ids {
-		if seen[id] {
-			continue
-		}
-		seen[id] = true
-		result = append(result, id)
-	}
-	sortGraphIDs(result, order)
-	return result
-}
-
 func idSetKeys(values map[string]bool, order map[string]int) []string {
 	ids := make([]string, 0, len(values))
 	for id, included := range values {
