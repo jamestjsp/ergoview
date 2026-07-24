@@ -210,6 +210,24 @@ func (m Model) renderDetailPane(width int) string {
 }
 
 func (m Model) renderFooter() string {
+	if m.view == viewDependencies {
+		items := []string{
+			m.styles.footerKey.Render("h/j/k/l") + " node",
+			m.styles.footerKey.Render("enter") + " focus",
+			m.styles.footerKey.Render("esc") + " back",
+			m.styles.footerKey.Render("d") + " depth",
+			m.styles.footerKey.Render("a") + " actions",
+			m.styles.footerKey.Render("?") + " help",
+		}
+		if m.width >= narrowBreakpoint {
+			items = append(items,
+				m.styles.footerKey.Render("/")+" search",
+				m.styles.footerKey.Render("1/2/3")+" views",
+				m.styles.footerKey.Render("q")+" quit",
+			)
+		}
+		return m.renderFooterItems(items)
+	}
 	if m.width < narrowBreakpoint {
 		items := []string{
 			m.styles.footerKey.Render("j/k") + " move",
@@ -269,9 +287,17 @@ func (m Model) renderHelp() string {
 		m.styles.helpKey.Render("enter") + "          focus detail",
 		m.styles.helpKey.Render("?") + "              toggle help",
 		m.styles.helpKey.Render("q / ctrl+c") + "     quit",
-		"",
-		m.styles.dim.Render("Mouse selection and wheel scrolling are enabled."),
 	}
+	if m.view == viewDependencies {
+		help = append(help,
+			"",
+			m.styles.helpTitle.Render("Dependency graph"),
+			m.styles.helpKey.Render("h / j / k / l")+"    move spatially between nodes",
+			m.styles.helpKey.Render("enter / esc")+"      focus node / previous focus",
+			m.styles.helpKey.Render("d")+"                direct / adaptive / lineage depth",
+		)
+	}
+	help = append(help, "", m.styles.dim.Render("Mouse selection and wheel scrolling are enabled."))
 	panel := m.styles.helpPanel.Render(strings.Join(help, "\n"))
 	return lipgloss.Place(
 		m.width,

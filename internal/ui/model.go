@@ -66,30 +66,33 @@ type Options struct {
 }
 
 type Model struct {
-	snapshot         ergo.Snapshot
-	source           SnapshotSource
-	runner           CommandRunner
-	rows             []row
-	selected         int
-	focus            focus
-	view             viewMode
-	filter           stateFilter
-	containerFilter  string
-	searching        bool
-	search           textinput.Model
-	actionMenu       bool
-	dialog           *dialog
-	pendingSelection string
-	width            int
-	height           int
-	dark             bool
-	noColor          bool
-	help             bool
-	agent            string
-	styles           styles
-	detail           viewport.Model
-	status           string
-	loadErr          error
+	snapshot          ergo.Snapshot
+	source            SnapshotSource
+	runner            CommandRunner
+	rows              []row
+	selected          int
+	focus             focus
+	view              viewMode
+	filter            stateFilter
+	containerFilter   string
+	searching         bool
+	search            textinput.Model
+	actionMenu        bool
+	dialog            *dialog
+	pendingSelection  string
+	width             int
+	height            int
+	dark              bool
+	noColor           bool
+	help              bool
+	agent             string
+	styles            styles
+	detail            viewport.Model
+	status            string
+	loadErr           error
+	graphFocusID      string
+	graphFocusHistory []string
+	graphScope        graphScope
 }
 
 func New(snapshot ergo.Snapshot, options Options) Model {
@@ -110,9 +113,11 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
 		),
+		graphScope: graphScopeAdaptive,
 	}
 	model.detail.SoftWrap = true
 	model.rebuildRows("")
+	model.graphFocusID = model.selectedID()
 	model.syncDetail()
 	return model
 }
@@ -265,10 +270,31 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 		m.toggleFocus()
 		return nil
 	case "enter":
+		if m.view == viewDependencies {
+			m.focusGraphSelection()
+			return nil
+		}
 		if m.width < narrowBreakpoint {
 			m.toggleFocus()
 		} else {
 			m.focus = focusDetail
+		}
+		return nil
+	}
+	if m.view == viewDependencies {
+		switch key {
+		case "h", "left":
+			m.moveGraphSelection(graphPoint{X: -1})
+		case "j", "down":
+			m.moveGraphSelection(graphPoint{Y: 1})
+		case "k", "up":
+			m.moveGraphSelection(graphPoint{Y: -1})
+		case "l", "right":
+			m.moveGraphSelection(graphPoint{X: 1})
+		case "d":
+			m.cycleGraphScope()
+		case "esc":
+			m.restoreGraphFocus()
 		}
 		return nil
 	}
@@ -296,6 +322,10 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 
 func (m *Model) updateMouseClick(message tea.MouseClickMsg) {
 	if message.Button != tea.MouseLeft || m.help {
+		return
+	}
+	if m.view == viewDependencies {
+		m.updateGraphMouseClick(message)
 		return
 	}
 	if m.view != viewOverview {
@@ -340,6 +370,17 @@ func (m *Model) selectIndex(index int) {
 	}
 	m.selected = min(max(index, 0), len(m.rows)-1)
 	m.syncDetail()
+}
+
+func (m *Model) selectTaskID(id string) bool {
+	for index, item := range m.rows {
+		if item.id == id {
+			m.selected = index
+			m.syncDetail()
+			return true
+		}
+	}
+	return false
 }
 
 func (m Model) selectedTask() (ergo.Task, bool) {
@@ -397,6 +438,10 @@ func (m *Model) rebuildRows(selectedID string) {
 				break
 			}
 		}
+	}
+	if _, ok := m.snapshot.Task(m.graphFocusID); !ok {
+		m.graphFocusID = m.selectedID()
+		m.graphFocusHistory = nil
 	}
 }
 
@@ -480,9 +525,14 @@ func (m *Model) sortRowsForBoard() {
 
 func (m *Model) setView(view viewMode) {
 	selectedID := m.selectedID()
+	previousView := m.view
 	m.view = view
 	m.focus = focusOutline
 	m.rebuildRows(selectedID)
+	if view == viewDependencies && previousView != viewDependencies {
+		m.graphFocusID = m.selectedID()
+		m.graphFocusHistory = nil
+	}
 	m.syncDetail()
 }
 

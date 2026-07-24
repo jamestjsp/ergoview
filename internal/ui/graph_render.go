@@ -79,16 +79,10 @@ func (m Model) renderDependencies() string {
 	}
 
 	graphHeight := max(1, contentHeight-1)
-	layout := buildDependencyGraphLayout(dependencyGraphRequest{
-		Snapshot: m.snapshot,
-		FocusID:  selected.ID,
-		Scope:    graphScopeAdaptive,
-		Width:    contentWidth,
-		Height:   graphHeight,
-	})
+	layout := m.graphLayoutForView()
 	canvas := newGraphCanvas(contentWidth, graphHeight)
 	canvas.drawDependencyEdges(layout)
-	canvas.drawDependencyNodes(layout, m.snapshot)
+	canvas.drawDependencyNodes(layout, m.snapshot, selected.ID)
 
 	header := m.renderGraphHeader(layout, contentWidth)
 	content := header + "\n" + canvas.render(m.styles)
@@ -109,9 +103,12 @@ func (m Model) renderGraphHeader(layout dependencyGraphLayout, width int) string
 	if layout.Orientation == graphVertical {
 		flow = "top ↓ bottom"
 	}
-	summary := fmt.Sprintf("adaptive  ·  %s  ·  %d shown", flow, nodeCount)
+	summary := fmt.Sprintf("%s  ·  %s  ·  %d shown", layout.Scope.label(), flow, nodeCount)
 	if hiddenCount > 0 {
 		summary += fmt.Sprintf("  ·  %d hidden", hiddenCount)
+	}
+	if selectedID := m.selectedID(); layout.FocusID != "" && layout.FocusID != selectedID {
+		summary = fmt.Sprintf("focus %s  ·  selected %s  ·  %s", layout.FocusID, selectedID, summary)
 	}
 	left := m.styles.paneTitle.Render("DEPENDENCY FLOW")
 	right := m.styles.metadata.Render(summary)
@@ -295,13 +292,13 @@ func graphEdgeGlyph(mask uint8) string {
 	}
 }
 
-func (c *graphCanvas) drawDependencyNodes(layout dependencyGraphLayout, snapshot ergo.Snapshot) {
+func (c *graphCanvas) drawDependencyNodes(layout dependencyGraphLayout, snapshot ergo.Snapshot, selectedID string) {
 	for _, node := range layout.Nodes {
-		c.drawDependencyNode(node, node.ID == layout.FocusID, snapshot)
+		c.drawDependencyNode(node, node.ID == selectedID, node.ID == layout.FocusID, snapshot)
 	}
 }
 
-func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, focused bool, snapshot ergo.Snapshot) {
+func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, selected, focused bool, snapshot ergo.Snapshot) {
 	rect := node.Rect
 	if rect.Width < 4 || rect.Height < 3 {
 		return
@@ -325,7 +322,7 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, focused bool,
 		bottomLeft, bottomRight = "╚", "╝"
 		vertical = "║"
 	}
-	if focused {
+	if selected {
 		borderRole = graphRoleFocus
 		textRole = graphRoleFocus
 		if !node.Task.Container {
@@ -335,13 +332,19 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, focused bool,
 			vertical = "┃"
 		}
 		c.fillRect(rect, " ", graphRoleFocus)
+	} else if focused {
+		borderRole = graphRoleEpic
 	}
 
 	c.drawBox(rect, topLeft, topRight, bottomLeft, bottomRight, horizontal, vertical, borderRole)
 	symbol, label, _ := Model{snapshot: snapshot}.taskPresentation(node.Task)
 	stateRole := graphRoleForTask(node.Task)
-	if focused {
+	if selected {
 		stateRole = graphRoleFocus
+	}
+	if focused && !selected {
+		symbol = "◎"
+		stateRole = graphRoleEpic
 	}
 	c.drawText(rect.X+1, rect.Y, symbol, stateRole, 1)
 	c.drawText(rect.X+2, rect.Y, " "+node.Task.Title, textRole, rect.Width-3)
@@ -359,7 +362,7 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, focused bool,
 	if node.Task.ParentID != "" {
 		parent := "◇" + node.Task.ParentID
 		role := graphRoleEpic
-		if focused {
+		if selected {
 			role = graphRoleFocus
 		}
 		c.drawText(x, rect.Y+1, parent, role, rect.X+rect.Width-1-x)
