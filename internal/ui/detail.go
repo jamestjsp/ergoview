@@ -56,9 +56,12 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 		}
 	}
 	if task.Container {
+		done, total := completedChildren(m.snapshot, task), len(task.Children)
 		content.WriteString(m.styles.section.Render("Progress"))
 		content.WriteString("\n")
-		content.WriteString(fmt.Sprintf("  %d of %d children complete\n", completedChildren(m.snapshot, task), len(task.Children)))
+		content.WriteString("  ")
+		content.WriteString(m.styles.brand.Render(progressBar(done, total)))
+		fmt.Fprintf(&content, "  %d of %d children complete\n", done, total)
 	}
 	if strings.TrimSpace(task.Body) != "" {
 		content.WriteString(m.styles.section.Render("Description"))

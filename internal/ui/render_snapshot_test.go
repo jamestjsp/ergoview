@@ -94,7 +94,7 @@ func TestDependencyGraphUsesAvailableTerminalRealEstate(t *testing.T) {
 		}
 		assertFits(t, content, size.width, size.height)
 		if size.width == 140 && size.height == 36 {
-			for _, expected := range []string{"CORE01 EPIC 1/1", "RTHEME READY", "RSIGN1 BLOCKED", "LAUNCH WAITING"} {
+			for _, expected := range []string{"CORE01 ▰▰▰▰ 1/1", "RTHEME READY", "RSIGN1 BLOCKED", "LAUNCH WAITING"} {
 				if !strings.Contains(plain, expected) {
 					t.Fatalf("%dx%d graph missing %q:\n%s", size.width, size.height, expected, plain)
 				}
@@ -253,7 +253,10 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 		return "#64748b", "600", .8
 	case "◇", "◆", "•":
 		return "#a78bfa", "700", 1
-	case "2/4", "0/3", "1/2":
+	case "2/4", "0/3", "1/2", "1/1":
+		return "#a78bfa", "600", 1
+	}
+	if isProgressBar(token) {
 		return "#a78bfa", "600", 1
 	}
 	if line == 0 {
@@ -286,6 +289,15 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 		return "#f1f5f9", "600", 1
 	}
 	return fill, weight, opacity
+}
+
+func isProgressBar(text string) bool {
+	for _, character := range text {
+		if character != '▰' && character != '▱' {
+			return false
+		}
+	}
+	return text != ""
 }
 
 func isBoxDrawing(text string) bool {

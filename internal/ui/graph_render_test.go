@@ -30,7 +30,7 @@ func TestGraphCanvasRendersEpicTasksStateAndDirection(t *testing.T) {
 		"DEPENDENCY FLOW",
 		"depth adaptive",
 		"Launch experience",
-		"EPIC 0/1",
+		"EPIC ▱▱▱▱ 0/1",
 		"Integrate graph",
 		"Polish navigation",
 		"▶",

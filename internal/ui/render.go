@@ -167,7 +167,7 @@ func (m Model) taskPresentation(task ergo.Task) (string, string, lipgloss.Style)
 		if task.Complete {
 			return "◆", "DONE", m.styles.done
 		}
-		return "◇", fmt.Sprintf("%d/%d", completedChildren(m.snapshot, task), len(task.Children)), m.styles.brand
+		return "◇", progressLabel(completedChildren(m.snapshot, task), len(task.Children)), m.styles.brand
 	case task.State == ergo.StateDoing:
 		return "◐", "DOING", m.styles.doing
 	case task.State == ergo.StateBlocked:
@@ -183,6 +183,25 @@ func (m Model) taskPresentation(task ergo.Task) (string, string, lipgloss.Style)
 	default:
 		return "·", "WAITING", m.styles.waiting
 	}
+}
+
+func progressLabel(done, total int) string {
+	return progressBar(done, total) + " " + fmt.Sprintf("%d/%d", done, total)
+}
+
+func progressBar(done, total int) string {
+	const cells = 4
+	if total <= 0 {
+		return strings.Repeat("▱", cells)
+	}
+	filled := done * cells / total
+	if done > 0 && filled == 0 {
+		filled = 1
+	}
+	if done < total && filled == cells {
+		filled = cells - 1
+	}
+	return strings.Repeat("▰", filled) + strings.Repeat("▱", cells-filled)
 }
 
 func completedChildren(snapshot ergo.Snapshot, task ergo.Task) int {

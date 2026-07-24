@@ -4,17 +4,17 @@
 │ WORK                                                                 │
 │ ◆ Graph foundations                                     DONE  CORE01 │
 │   ✓ Define dependency semantics                         DONE  CORECH │
-│ ◇ Desktop experience                                     2/4  DESK01 │
+│ ◇ Desktop experience                                ▰▰▱▱ 2/4  DESK01 │
 │   ◐ Add task editing workflows     DOING  DEDIT1  @codex@workstation │
 │   ✓ Load Ergo repositories                              DONE  DLOAD1 │
 │   ✓ Build board and dependency views                    DONE  DVIEW1 │
 │   ○ Package ev.exe for Windows                         READY  DWIN01 │
 │ · Publish the first public release                   WAITING  LAUNCH │
-│ ◇ Release readiness                                      0/3  REL001 │
+│ ◇ Release readiness                                 ▱▱▱▱ 0/3  REL001 │
 │   · Write install and keyboard guide                 WAITING  RDOCS1 │
 │   ! Configure release signing                        BLOCKED  RSIGN1 │
 │   ○ Polish light and dark themes                       READY  RTHEME │
-│ ◇ Team adoption                                          1/2  TEAM01 │
+│ ◇ Team adoption                                     ▰▰▱▱ 1/2  TEAM01 │
 │   × Keep the discarded prototype                    CANCELED  TDEMO1 │
 │   · Review editing flow with the team                WAITING  TREVW1 │
 │                                                                      │

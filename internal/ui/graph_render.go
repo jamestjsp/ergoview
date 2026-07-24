@@ -347,7 +347,7 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, selected, foc
 	c.drawText(x, rect.Y+1, node.Task.ID, idRole, rect.Width-3)
 	x += lipgloss.Width(node.Task.ID) + 1
 	if node.Task.Container {
-		progress := fmt.Sprintf("EPIC %d/%d", completedChildren(snapshot, node.Task), len(node.Task.Children))
+		progress := progressLabel(completedChildren(snapshot, node.Task), len(node.Task.Children))
 		c.drawText(x, rect.Y+1, progress, textRole, rect.X+rect.Width-1-x)
 		return
 	}

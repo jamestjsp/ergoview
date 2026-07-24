@@ -88,3 +88,8 @@
 {"type":"link","ts":"2026-07-24T02:21:03.313336Z","data":{"from_id":"ADD2TH","to_id":"JRLQU5","type":"depends"}}
 {"type":"claim","ts":"2026-07-24T02:21:08.10232Z","data":{"id":"JRLQU5","agent_id":"fable@claude-code","ts":"2026-07-24T02:21:08.10232Z"}}
 {"type":"state","ts":"2026-07-24T02:21:08.10232Z","data":{"id":"JRLQU5","state":"doing","ts":"2026-07-24T02:21:08.10232Z"}}
+{"type":"message","ts":"2026-07-24T02:23:32.505229Z","data":{"task_id":"JRLQU5","kind":"done","text":"Unified borders, decluttered node interiors, clearer overflow cards, leaner header; goldens and docs SVGs regenerated; all tests pass","ts":"2026-07-24T02:23:32.505229Z"}}
+{"type":"unclaim","ts":"2026-07-24T02:23:32.505229Z","data":{"id":"JRLQU5","ts":"2026-07-24T02:23:32.505229Z"}}
+{"type":"state","ts":"2026-07-24T02:23:32.505229Z","data":{"id":"JRLQU5","state":"done","ts":"2026-07-24T02:23:32.505229Z"}}
+{"type":"claim","ts":"2026-07-24T02:23:40.280433Z","data":{"id":"ADD2TH","agent_id":"fable@claude-code","ts":"2026-07-24T02:23:40.280433Z"}}
+{"type":"state","ts":"2026-07-24T02:23:40.280433Z","data":{"id":"ADD2TH","state":"doing","ts":"2026-07-24T02:23:40.280433Z"}}
