@@ -4,19 +4,19 @@
 │ READY  2                           DOING  1                           DONE  3                              │
 │  ○ Package ev.exe for Windows  DW…  ◐ Add task editing workflows  DE…  ✓ Define dependency semantics  CO…  │
 │  ○ Polish light and dark themes  …                                     ✓ Load Ergo repositories  DLOAD1    │
-│                                                                        ✓ Build board and dependency view…  │
-│                                                                                                            │
-│                                                                                                            │
-│                                                                                                            │
-│                                                                                                            │
-│                                                                                                            │
-│                                                                                                            │
-│                                                                                                            │
-│                                                                                                            │
-│ WAITING  3                         BLOCKED  1                         CANCELED  1                          │
-│  · Publish the first public relea…  ! Configure release signing  RSI…  × Keep the discarded prototype  T…  │
-│  · Write install and keyboard gui…                                                                         │
+│                                    BLOCKED  1                          ✓ Build board and dependency view…  │
+│ WAITING  3                          ! Configure release signing  RSI…                                      │
+│  · Publish the first public relea…                                    CANCELED  1                          │
+│  · Write install and keyboard gui…                                     × Keep the discarded prototype  T…  │
 │  · Review editing flow with the t…                                                                         │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
+│                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │

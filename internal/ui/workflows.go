@@ -81,22 +81,28 @@ func (m Model) boardGroups() []boardGroup {
 
 func (m Model) renderBoardColumn(groups []boardGroup, width, height int) string {
 	var lines []string
-	perGroup := max(3, height/2)
-	for _, group := range groups {
-		lines = append(lines, group.style.Render(fmt.Sprintf("%s  %d", group.title, len(group.tasks))))
-		limit := max(1, perGroup-2)
-		for index, task := range group.tasks {
-			if index == limit {
-				lines = append(lines, m.styles.dim.Render(fmt.Sprintf("  +%d more", len(group.tasks)-limit)))
-				break
-			}
-			lines = append(lines, m.renderBoardTask(task, width))
+	for index, group := range groups {
+		if index > 0 {
+			lines = append(lines, "")
 		}
+		lines = append(lines, group.style.Render(fmt.Sprintf("%s  %d", group.title, len(group.tasks))))
 		if len(group.tasks) == 0 {
 			lines = append(lines, m.styles.empty.Render("  none"))
+			continue
 		}
-		for len(lines)%perGroup != 0 {
-			lines = append(lines, "")
+		// Reserve room for each remaining group: spacer, header, one row.
+		reserved := (len(groups) - index - 1) * 3
+		available := max(1, height-len(lines)-reserved)
+		if len(group.tasks) > available {
+			shown := max(0, available-1)
+			for _, task := range group.tasks[:shown] {
+				lines = append(lines, m.renderBoardTask(task, width))
+			}
+			lines = append(lines, m.styles.dim.Render(fmt.Sprintf("  +%d more", len(group.tasks)-shown)))
+			continue
+		}
+		for _, task := range group.tasks {
+			lines = append(lines, m.renderBoardTask(task, width))
 		}
 	}
 	return strings.Join(fitLines(lines, height, width), "\n")

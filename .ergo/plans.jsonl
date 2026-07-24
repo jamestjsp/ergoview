@@ -98,3 +98,8 @@
 {"type":"state","ts":"2026-07-24T02:25:00.275652Z","data":{"id":"ADD2TH","state":"done","ts":"2026-07-24T02:25:00.275652Z"}}
 {"type":"claim","ts":"2026-07-24T02:25:00.280655Z","data":{"id":"ZTAIZN","agent_id":"fable@claude-code","ts":"2026-07-24T02:25:00.280655Z"}}
 {"type":"state","ts":"2026-07-24T02:25:00.280655Z","data":{"id":"ZTAIZN","state":"doing","ts":"2026-07-24T02:25:00.280655Z"}}
+{"type":"message","ts":"2026-07-24T02:26:04.832799Z","data":{"task_id":"ZTAIZN","kind":"done","text":"Footer truncates at item boundaries with a unit test across five widths; status clears on next key press","ts":"2026-07-24T02:26:04.832799Z"}}
+{"type":"unclaim","ts":"2026-07-24T02:26:04.832799Z","data":{"id":"ZTAIZN","ts":"2026-07-24T02:26:04.832799Z"}}
+{"type":"state","ts":"2026-07-24T02:26:04.832799Z","data":{"id":"ZTAIZN","state":"done","ts":"2026-07-24T02:26:04.832799Z"}}
+{"type":"claim","ts":"2026-07-24T02:26:04.837705Z","data":{"id":"5I252G","agent_id":"fable@claude-code","ts":"2026-07-24T02:26:04.837705Z"}}
+{"type":"state","ts":"2026-07-24T02:26:04.837705Z","data":{"id":"5I252G","state":"doing","ts":"2026-07-24T02:26:04.837705Z"}}
