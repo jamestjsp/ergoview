@@ -135,6 +135,34 @@ func TestAdaptiveGraphLayoutSummarizesHiddenLineage(t *testing.T) {
 	if _, ok := layout.node("T05"); !ok {
 		t.Fatal("focused task was omitted")
 	}
+	assertGraphNodesWithinBounds(t, layout, 44, 16)
+}
+
+func TestGraphLayoutSummarizesSideBranchesAroundDownstreamWork(t *testing.T) {
+	snapshot := graphTestSnapshot(t,
+		[]graphTaskSpec{
+			{ID: "FOUND", Title: "Foundation"},
+			{ID: "FOCUS", Title: "Selected work"},
+			{ID: "MERGE", Title: "Downstream merge"},
+			{ID: "SIDE", Title: "Side prerequisite"},
+		},
+		[]graphDependencySpec{
+			{From: "FOUND", To: "FOCUS"},
+			{From: "FOCUS", To: "MERGE"},
+			{From: "SIDE", To: "MERGE"},
+		},
+	)
+	layout := buildDependencyGraphLayout(dependencyGraphRequest{
+		Snapshot: snapshot,
+		FocusID:  "FOCUS",
+		Scope:    graphScopeDirect,
+		Width:    100,
+		Height:   24,
+	})
+	overflow, ok := layout.node(upstreamOverflowID)
+	if !ok || len(overflow.HiddenIDs) != 1 || overflow.HiddenIDs[0] != "SIDE" {
+		t.Fatalf("side branch overflow = %#v, found=%v", overflow, ok)
+	}
 }
 
 func TestGraphScopesKeepHierarchySeparateFromDependencies(t *testing.T) {
@@ -240,6 +268,17 @@ func assertGraphRanks(t *testing.T, layout dependencyGraphLayout, expected map[s
 		}
 		if node.Rank != expectedRank {
 			t.Fatalf("node %s rank = %d, want %d", id, node.Rank, expectedRank)
+		}
+	}
+}
+
+func assertGraphNodesWithinBounds(t *testing.T, layout dependencyGraphLayout, width, height int) {
+	t.Helper()
+	for _, node := range layout.Nodes {
+		if node.Rect.X < 0 || node.Rect.Y < 0 ||
+			node.Rect.X+node.Rect.Width > width ||
+			node.Rect.Y+node.Rect.Height > height {
+			t.Fatalf("node %q rect %#v exceeds %dx%d", node.ID, node.Rect, width, height)
 		}
 	}
 }

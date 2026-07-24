@@ -2,6 +2,8 @@
  2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────╮
 │ WORK                                                                 │
+│ ◆ Graph foundations                                     DONE  CORE01 │
+│   ✓ Define dependency semantics                         DONE  CORECH │
 │ ◇ Desktop experience                                     2/4  DESK01 │
 │   ◐ Add task editing workflows     DOING  DEDIT1  @codex@workstation │
 │   ✓ Load Ergo repositories                              DONE  DLOAD1 │
@@ -15,8 +17,6 @@
 │ ◇ Team adoption                                          1/2  TEAM01 │
 │   × Keep the discarded prototype                    CANCELED  TDEMO1 │
 │   · Review editing flow with the team                WAITING  TREVW1 │
-│                                                                      │
-│                                                                      │
 │                                                                      │
 │                                                                      │
 │                                                                      │

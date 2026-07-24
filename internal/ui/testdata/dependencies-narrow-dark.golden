@@ -1,21 +1,21 @@
  ERGO VIEW  product-roadmap                 1 Outline  2 Board  3 Deps
  2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────╮
-│ DEPENDENCY FLOW                adaptive  ·  left → right  ·  6 shown │
+│ DEPENDENCY FLOW   adaptive  ·  left → right  ·  4 shown  ·  6 hidden │
 │                                                                      │
 │                                                                      │
 │                                                                      │
-│                                                                      │
-│                                                                      │
-│ ╭✓ Build board …╮     ┏◐ Add task edi…┓     ╭· Write instal…╮        │
-│ │ DVIEW1 DONE ◇…│────▶┃ DEDIT1 DOING …┃────▶│ RDOCS1 WAITING│        │
-│ ╰───────────────╯    │┗━━━━━━━━━━━━━━━┛    │╰───────────────╯        │
+│ ╭✓ Load Ergo re…╮                                                    │
+│ │ DLOAD1 DONE ◇…│────┬─────────────────────╮                         │
+│ ╰───────────────╯    │                     │                         │
 │                      │                     │                         │
-│ ╭✓ Load Ergo re…╮    │╭○ Package ev.e…╮    │╭· Review editi…╮        │
-│ │ DLOAD1 DONE ◇…│────▶│ DWIN01 READY …│    ▶│ TREVW1 WAITING│        │
-│ ╰───────────────╯     ╰───────────────╯     ╰───────────────╯        │
-│                                                                      │
-│                                                                      │
+│ ╭✓ Build board …╮    │┏◐ Add task edi…┓    │╭… +6 DOWNSTREAM╮        │
+│ │ DVIEW1 DONE ◇…│────▶┃ DEDIT1 DOING …┃────▶┆ more context  ┆        │
+│ ╰───────────────╯    │┗━━━━━━━━━━━━━━━┛     ╰┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄╯        │
+│                      │                                               │
+│ ╔◆ Graph founda…╗    │                                               │
+│ ║ CORE01 EPIC 1…║────╯                                               │
+│ ╚═══════════════╝                                                    │
 │                                                                      │
 │                                                                      │
 │                                                                      │

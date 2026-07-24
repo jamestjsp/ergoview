@@ -1,10 +1,10 @@
  ERGO VIEW  product-roadmap                                              1 Overview  2 Board  3 Dependencies
  2 ready  1 doing  1 blocked  3 waiting
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ READY  2                           DOING  1                           DONE  2                              │
-│  ○ Package ev.exe for Windows  DW…  ◐ Add task editing workflows  DE…  ✓ Load Ergo repositories  DLOAD1    │
-│  ○ Polish light and dark themes  …                                     ✓ Build board and dependency view…  │
-│                                                                                                            │
+│ READY  2                           DOING  1                           DONE  3                              │
+│  ○ Package ev.exe for Windows  DW…  ◐ Add task editing workflows  DE…  ✓ Define dependency semantics  CO…  │
+│  ○ Polish light and dark themes  …                                     ✓ Load Ergo repositories  DLOAD1    │
+│                                                                        ✓ Build board and dependency view…  │
 │                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │

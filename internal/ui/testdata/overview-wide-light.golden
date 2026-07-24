@@ -2,20 +2,21 @@
  2 ready  1 doing  1 blocked  3 waiting
 ╭────────────────────────────────────────────────────────╮╭────────────────────────────────────────────────────────────────────────────────╮
 │ WORK                                                   ││ DETAIL                                                                         │
-│ ◇ Desktop experience                       2/4  DESK01 ││ DOING  DEDIT1                                                                  │
-│   ◐ Add task editin… DOING  DEDIT1  @codex@workstation ││ Add task editing workflows                                                     │
-│   ✓ Load Ergo repositories                DONE  DLOAD1 ││ claimed by codex@workstation                                                   │
-│   ✓ Build board and dependency views      DONE  DVIEW1 ││ container  Desktop experience  DESK01                                          │
-│   ○ Package ev.exe for Windows           READY  DWIN01 ││                                                                                │
-│ · Publish the first public release     WAITING  LAUNCH ││ Depends on                                                                     │
-│ ◇ Release readiness                        0/3  REL001 ││   ← Load Ergo repositories  DLOAD1                                             │
-│   · Write install and keyboard guide   WAITING  RDOCS1 ││   ← Build board and dependency views  DVIEW1                                   │
-│   ! Configure release signing          BLOCKED  RSIGN1 ││                                                                                │
-│   ○ Polish light and dark themes         READY  RTHEME ││ Unlocks                                                                        │
-│ ◇ Team adoption                            1/2  TEAM01 ││   → Write install and keyboard guide  RDOCS1                                   │
-│   × Keep the discarded prototype      CANCELED  TDEMO1 ││   → Review editing flow with the team  TREVW1                                  │
-│   · Review editing flow with the team  WAITING  TREVW1 ││                                                                                │
-│                                                        ││ Description                                                                    │
+│ ◆ Graph foundations                       DONE  CORE01 ││ DOING  DEDIT1                                                                  │
+│   ✓ Define dependency semantics           DONE  CORECH ││ Add task editing workflows                                                     │
+│ ◇ Desktop experience                       2/4  DESK01 ││ claimed by codex@workstation                                                   │
+│   ◐ Add task editin… DOING  DEDIT1  @codex@workstation ││ container  Desktop experience  DESK01                                          │
+│   ✓ Load Ergo repositories                DONE  DLOAD1 ││                                                                                │
+│   ✓ Build board and dependency views      DONE  DVIEW1 ││ Depends on                                                                     │
+│   ○ Package ev.exe for Windows           READY  DWIN01 ││   ← Graph foundations  CORE01                                                  │
+│ · Publish the first public release     WAITING  LAUNCH ││   ← Load Ergo repositories  DLOAD1                                             │
+│ ◇ Release readiness                        0/3  REL001 ││   ← Build board and dependency views  DVIEW1                                   │
+│   · Write install and keyboard guide   WAITING  RDOCS1 ││                                                                                │
+│   ! Configure release signing          BLOCKED  RSIGN1 ││ Unlocks                                                                        │
+│   ○ Polish light and dark themes         READY  RTHEME ││   → Write install and keyboard guide  RDOCS1                                   │
+│ ◇ Team adoption                            1/2  TEAM01 ││   → Review editing flow with the team  TREVW1                                  │
+│   × Keep the discarded prototype      CANCELED  TDEMO1 ││                                                                                │
+│   · Review editing flow with the team  WAITING  TREVW1 ││ Description                                                                    │
 │                                                        ││                                                                                │
 │                                                        ││   ## Goal                                                                      │
 │                                                        ││                                                                                │
@@ -27,6 +28,5 @@
 │                                                        ││   • Keep command errors in context.                                            │
 │                                                        ││   • Reload the selected task after every mutation.                             │
 │                                                        ││                                                                                │
-│                                                        ││   Current focus: validate the complete flow on macOS, Linux, and Windows.      │
 ╰────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
  j/k move  ·  tab pane  ·  enter detail  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clear  ·  ? he
