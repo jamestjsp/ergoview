@@ -103,3 +103,6 @@
 {"type":"state","ts":"2026-07-24T02:26:04.832799Z","data":{"id":"ZTAIZN","state":"done","ts":"2026-07-24T02:26:04.832799Z"}}
 {"type":"claim","ts":"2026-07-24T02:26:04.837705Z","data":{"id":"5I252G","agent_id":"fable@claude-code","ts":"2026-07-24T02:26:04.837705Z"}}
 {"type":"state","ts":"2026-07-24T02:26:04.837705Z","data":{"id":"5I252G","state":"doing","ts":"2026-07-24T02:26:04.837705Z"}}
+{"type":"message","ts":"2026-07-24T02:26:43.003057Z","data":{"task_id":"5I252G","kind":"done","text":"Content-sized group stacking with reserved space for later groups; goldens regenerated; all tests pass","ts":"2026-07-24T02:26:43.003057Z"}}
+{"type":"unclaim","ts":"2026-07-24T02:26:43.003057Z","data":{"id":"5I252G","ts":"2026-07-24T02:26:43.003057Z"}}
+{"type":"state","ts":"2026-07-24T02:26:43.003057Z","data":{"id":"5I252G","state":"done","ts":"2026-07-24T02:26:43.003057Z"}}
