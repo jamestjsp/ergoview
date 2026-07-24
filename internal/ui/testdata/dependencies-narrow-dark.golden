@@ -1,0 +1,24 @@
+ ERGO VIEW  product-roadmap                 1 Outline  2 Board  3 Deps
+ 2 ready  1 doing  1 blocked  3 waiting
+╭──────────────────────────────────────────────────────────────────────╮
+│ DEPENDENCY FLOW                adaptive  ·  left → right  ·  6 shown │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│ ╭✓ Build board …╮     ┏◐ Add task edi…┓     ╭· Write instal…╮        │
+│ │ DVIEW1 DONE ◇…│────▶┃ DEDIT1 DOING …┃────▶│ RDOCS1 WAITING│        │
+│ ╰───────────────╯    │┗━━━━━━━━━━━━━━━┛    │╰───────────────╯        │
+│                      │                     │                         │
+│ ╭✓ Load Ergo re…╮    │╭○ Package ev.e…╮    │╭· Review editi…╮        │
+│ │ DLOAD1 DONE ◇…│────▶│ DWIN01 READY …│    ▶│ TREVW1 WAITING│        │
+│ ╰───────────────╯     ╰───────────────╯     ╰───────────────╯        │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+│                                                                      │
+╰──────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  1/2/3 views  ·  a actions  ·  n new  ·  / search  ·  ? he

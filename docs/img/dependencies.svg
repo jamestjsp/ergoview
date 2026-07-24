@@ -33,57 +33,24 @@
     <text x="288.4" y="99.0" fill="#94a3b8" fill-opacity="1.00" font-weight="500" textLength="57.4" lengthAdjust="spacingAndGlyphs">waiting</text>
     <text x="26.0" y="117.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="1016.8" lengthAdjust="spacingAndGlyphs">╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮</text>
     <text x="26.0" y="135.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="42.4" y="135.0" fill="#a78bfa" fill-opacity="1.00" font-weight="700" textLength="106.6" lengthAdjust="spacingAndGlyphs">PREREQUISITES</text>
-    <text x="378.6" y="135.0" fill="#a78bfa" fill-opacity="1.00" font-weight="700" textLength="65.6" lengthAdjust="spacingAndGlyphs">SELECTED</text>
-    <text x="698.4" y="135.0" fill="#a78bfa" fill-opacity="1.00" font-weight="700" textLength="57.4" lengthAdjust="spacingAndGlyphs">UNLOCKS</text>
+    <text x="42.4" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="82.0" lengthAdjust="spacingAndGlyphs">DEPENDENCY</text>
+    <text x="132.6" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">FLOW</text>
+    <text x="723.0" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="65.6" lengthAdjust="spacingAndGlyphs">adaptive</text>
+    <text x="805.0" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="829.6" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">left</text>
+    <text x="870.6" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">→</text>
+    <text x="887.0" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">right</text>
+    <text x="944.4" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="969.0" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">6</text>
+    <text x="985.4" y="135.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">shown</text>
     <text x="1034.6" y="135.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="153.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="50.6" y="153.0" fill="#34d399" fill-opacity="1.00" font-weight="700" textLength="8.2" lengthAdjust="spacingAndGlyphs">✓</text>
-    <text x="67.0" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">Load</text>
-    <text x="108.0" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">Ergo</text>
-    <text x="149.0" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="98.4" lengthAdjust="spacingAndGlyphs">repositories</text>
-    <text x="263.8" y="153.0" fill="#34d399" fill-opacity="1.00" font-weight="600" textLength="32.8" lengthAdjust="spacingAndGlyphs">DONE</text>
-    <text x="313.0" y="153.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">DLOAD1</text>
-    <text x="706.6" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="723.0" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">Write</text>
-    <text x="772.2" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">install</text>
-    <text x="837.8" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">and</text>
-    <text x="870.6" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="65.6" lengthAdjust="spacingAndGlyphs">keyboard</text>
-    <text x="944.4" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">guide</text>
-    <text x="1001.8" y="153.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">W…</text>
     <text x="1034.6" y="153.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="171.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="50.6" y="171.0" fill="#34d399" fill-opacity="1.00" font-weight="700" textLength="8.2" lengthAdjust="spacingAndGlyphs">✓</text>
-    <text x="67.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">Build</text>
-    <text x="116.2" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">board</text>
-    <text x="165.4" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">and</text>
-    <text x="198.2" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="82.0" lengthAdjust="spacingAndGlyphs">dependency</text>
-    <text x="288.4" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">views</text>
-    <text x="345.8" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">D…</text>
-    <text x="378.6" y="171.0" fill="#22d3ee" fill-opacity="1.00" font-weight="700" textLength="8.2" lengthAdjust="spacingAndGlyphs">◐</text>
-    <text x="395.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">Add</text>
-    <text x="427.8" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">task</text>
-    <text x="468.8" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">editing</text>
-    <text x="534.4" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="73.8" lengthAdjust="spacingAndGlyphs">workflows</text>
-    <text x="624.6" y="171.0" fill="#22d3ee" fill-opacity="1.00" font-weight="700" textLength="41.0" lengthAdjust="spacingAndGlyphs">DOING</text>
-    <text x="682.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">…</text>
-    <text x="706.6" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="723.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">Review</text>
-    <text x="780.4" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">editing</text>
-    <text x="846.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">flow</text>
-    <text x="887.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">with</text>
-    <text x="928.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">the</text>
-    <text x="960.8" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">team</text>
-    <text x="1010.0" y="171.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">…</text>
     <text x="1034.6" y="171.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="189.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="189.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="207.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
-    <text x="370.4" y="207.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">2</text>
-    <text x="386.8" y="207.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="98.4" lengthAdjust="spacingAndGlyphs">prerequisite</text>
-    <text x="493.4" y="207.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="509.8" y="207.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">2</text>
-    <text x="526.2" y="207.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="73.8" lengthAdjust="spacingAndGlyphs">dependent</text>
     <text x="1034.6" y="207.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="225.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="225.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
@@ -94,18 +61,82 @@
     <text x="26.0" y="279.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="279.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="297.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="42.4" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">╭✓</text>
+    <text x="67.0" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">Build</text>
+    <text x="116.2" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">board</text>
+    <text x="165.4" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">and</text>
+    <text x="198.2" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">depen…╮</text>
+    <text x="296.6" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">┏◐</text>
+    <text x="321.2" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">Add</text>
+    <text x="354.0" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">task</text>
+    <text x="395.0" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">editing</text>
+    <text x="460.6" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">work…┓</text>
+    <text x="550.8" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">╭·</text>
+    <text x="575.4" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">Write</text>
+    <text x="624.6" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">install</text>
+    <text x="690.2" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">and</text>
+    <text x="723.0" y="297.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">key…╮</text>
     <text x="1034.6" y="297.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="315.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="42.4" y="315.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="58.8" y="315.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">DVIEW1</text>
+    <text x="116.2" y="315.0" fill="#34d399" fill-opacity="1.00" font-weight="600" textLength="32.8" lengthAdjust="spacingAndGlyphs">DONE</text>
+    <text x="157.2" y="315.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">◇DESK01</text>
+    <text x="247.4" y="315.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">│────▶┃</text>
+    <text x="313.0" y="315.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">DEDIT1</text>
+    <text x="370.4" y="315.0" fill="#22d3ee" fill-opacity="1.00" font-weight="700" textLength="41.0" lengthAdjust="spacingAndGlyphs">DOING</text>
+    <text x="419.6" y="315.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">◇DESK01</text>
+    <text x="501.6" y="315.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">┃────▶│</text>
+    <text x="567.2" y="315.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">RDOCS1</text>
+    <text x="624.6" y="315.0" fill="#94a3b8" fill-opacity="1.00" font-weight="500" textLength="57.4" lengthAdjust="spacingAndGlyphs">WAITING</text>
+    <text x="690.2" y="315.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">◇REL001</text>
+    <text x="755.8" y="315.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="315.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="333.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="42.4" y="333.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="213.2" lengthAdjust="spacingAndGlyphs">╰────────────────────────╯</text>
+    <text x="288.4" y="333.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="221.4" lengthAdjust="spacingAndGlyphs">│┗━━━━━━━━━━━━━━━━━━━━━━━━┛</text>
+    <text x="542.6" y="333.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="221.4" lengthAdjust="spacingAndGlyphs">│╰────────────────────────╯</text>
     <text x="1034.6" y="333.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="351.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="288.4" y="351.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="542.6" y="351.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="351.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="369.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="42.4" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">╭✓</text>
+    <text x="67.0" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">Load</text>
+    <text x="108.0" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">Ergo</text>
+    <text x="149.0" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="106.6" lengthAdjust="spacingAndGlyphs">repositories╮</text>
+    <text x="288.4" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">│╭○</text>
+    <text x="321.2" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">Package</text>
+    <text x="386.8" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">ev.exe</text>
+    <text x="444.2" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">for</text>
+    <text x="477.0" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">Wi…╮</text>
+    <text x="542.6" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">│╭·</text>
+    <text x="575.4" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">Review</text>
+    <text x="632.8" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">editing</text>
+    <text x="698.4" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">flow</text>
+    <text x="739.4" y="369.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="24.6" lengthAdjust="spacingAndGlyphs">w…╮</text>
     <text x="1034.6" y="369.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="387.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="42.4" y="387.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="58.8" y="387.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">DLOAD1</text>
+    <text x="116.2" y="387.0" fill="#34d399" fill-opacity="1.00" font-weight="600" textLength="32.8" lengthAdjust="spacingAndGlyphs">DONE</text>
+    <text x="157.2" y="387.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">◇DESK01</text>
+    <text x="247.4" y="387.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">│────▶│</text>
+    <text x="313.0" y="387.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">DWIN01</text>
+    <text x="370.4" y="387.0" fill="#fbbf24" fill-opacity="1.00" font-weight="700" textLength="41.0" lengthAdjust="spacingAndGlyphs">READY</text>
+    <text x="419.6" y="387.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">◇DESK01</text>
+    <text x="501.6" y="387.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="542.6" y="387.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">▶│</text>
+    <text x="567.2" y="387.0" fill="#8492a8" fill-opacity="0.90" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">TREVW1</text>
+    <text x="624.6" y="387.0" fill="#94a3b8" fill-opacity="1.00" font-weight="500" textLength="57.4" lengthAdjust="spacingAndGlyphs">WAITING</text>
+    <text x="690.2" y="387.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">◇TEAM01</text>
+    <text x="755.8" y="387.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="387.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="405.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
+    <text x="42.4" y="405.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="213.2" lengthAdjust="spacingAndGlyphs">╰────────────────────────╯</text>
+    <text x="296.6" y="405.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="213.2" lengthAdjust="spacingAndGlyphs">╰────────────────────────╯</text>
+    <text x="550.8" y="405.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="213.2" lengthAdjust="spacingAndGlyphs">╰────────────────────────╯</text>
     <text x="1034.6" y="405.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="26.0" y="423.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="1034.6" y="423.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
