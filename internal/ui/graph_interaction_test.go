@@ -7,6 +7,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/jamestjsp/ergoview/internal/ergo"
 )
 
 func TestGraphNavigationMovesSpatiallyAndTargetsActions(t *testing.T) {
@@ -152,6 +154,49 @@ func TestGraphFocusSurvivesResizeReloadAndMatchingFilter(t *testing.T) {
 	}
 	if !strings.Contains(ansi.Strip(model.View().Content), "B") {
 		t.Fatal("selected graph node is not visible after reload")
+	}
+}
+
+func TestGraphFocusResetsWhenFilterRemovesIt(t *testing.T) {
+	snapshot := graphTestSnapshot(t,
+		[]graphTaskSpec{
+			{ID: "A", Title: "Foundation"},
+			{ID: "B", Title: "Old focus"},
+			{ID: "X", Title: "Active foundation", State: ergo.StateDoing},
+			{ID: "Y", Title: "Active release", State: ergo.StateDoing},
+		},
+		[]graphDependencySpec{
+			{From: "A", To: "B"},
+			{From: "X", To: "Y"},
+		},
+	)
+	model := New(snapshot, Options{NoColor: true})
+	model.rebuildRows("B")
+	model.setView(viewDependencies)
+	model = resize(t, model, 120, 26)
+	model.graphFocusHistory = []string{"A"}
+
+	model.filter = filterDoing
+	model.rebuildRows("B")
+
+	if model.selectedID() != "X" || model.graphFocusID != "X" {
+		t.Fatalf("filtered selection=%q focus=%q, want X", model.selectedID(), model.graphFocusID)
+	}
+	if len(model.graphFocusHistory) != 0 {
+		t.Fatalf("stale focus history = %v", model.graphFocusHistory)
+	}
+	layout := model.graphLayoutForView()
+	if _, ok := layout.node("X"); !ok {
+		t.Fatal("filtered graph does not show the replacement focus")
+	}
+	if _, ok := layout.node("B"); ok {
+		t.Fatal("filtered graph still shows the removed focus component")
+	}
+
+	updated, _ := model.Update(key("l"))
+	model = updated.(Model)
+	if model.selectedID() != "Y" {
+		t.Fatalf("spatial navigation selection = %q, want Y", model.selectedID())
 	}
 }
 

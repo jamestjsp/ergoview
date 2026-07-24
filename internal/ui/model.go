@@ -439,7 +439,7 @@ func (m *Model) rebuildRows(selectedID string) {
 			}
 		}
 	}
-	if _, ok := m.snapshot.Task(m.graphFocusID); !ok {
+	if m.rowIndex(m.graphFocusID) < 0 {
 		m.graphFocusID = m.selectedID()
 		m.graphFocusHistory = nil
 	}
