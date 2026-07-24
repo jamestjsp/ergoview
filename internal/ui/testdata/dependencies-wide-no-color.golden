@@ -1,11 +1,7 @@
  ERGO VIEW  product-roadmap                                                                            1 Overview  2 Board  3 Dependencies
  2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ PREREQUISITES                                 SELECTED                                    UNLOCKS                                        │
-│  ✓ Load Ergo repositories  DONE  DLOAD1                                                    · Write install and keyboard guide  WAITING…  │
-│  ✓ Build board and dependency views  DONE  …  ◐ Add task editing workflows  DOING  DEDIT1  · Review editing flow with the team  WAITIN…  │
-│                                                                                                                                          │
-│                                              2 prerequisite · 2 dependent                                                                │
+│ DEPENDENCY FLOW                                                                                    adaptive  ·  left → right  ·  6 shown │
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │
@@ -15,9 +11,13 @@
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
+│ ╭✓ Build board and depen…╮     ┏◐ Add task editing work…┓     ╭· Write install and key…╮                                                 │
+│ │ DVIEW1 DONE ◇DESK01    │────▶┃ DEDIT1 DOING ◇DESK01   ┃────▶│ RDOCS1 WAITING ◇REL001 │                                                 │
+│ ╰────────────────────────╯    │┗━━━━━━━━━━━━━━━━━━━━━━━━┛    │╰────────────────────────╯                                                 │
+│                               │                              │                                                                           │
+│ ╭✓ Load Ergo repositories╮    │╭○ Package ev.exe for Wi…╮    │╭· Review editing flow w…╮                                                 │
+│ │ DLOAD1 DONE ◇DESK01    │────▶│ DWIN01 READY ◇DESK01   │    ▶│ TREVW1 WAITING ◇TEAM01 │                                                 │
+│ ╰────────────────────────╯     ╰────────────────────────╯     ╰────────────────────────╯                                                 │
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │

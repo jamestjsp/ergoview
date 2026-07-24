@@ -3,34 +3,38 @@ package ui
 import "charm.land/lipgloss/v2"
 
 type styles struct {
-	app       lipgloss.Style
-	header    lipgloss.Style
-	brand     lipgloss.Style
-	path      lipgloss.Style
-	tab       lipgloss.Style
-	activeTab lipgloss.Style
-	pane      lipgloss.Style
-	focusPane lipgloss.Style
-	paneTitle lipgloss.Style
-	row       lipgloss.Style
-	selected  lipgloss.Style
-	dim       lipgloss.Style
-	ready     lipgloss.Style
-	waiting   lipgloss.Style
-	doing     lipgloss.Style
-	blocked   lipgloss.Style
-	failed    lipgloss.Style
-	done      lipgloss.Style
-	canceled  lipgloss.Style
-	metadata  lipgloss.Style
-	section   lipgloss.Style
-	footer    lipgloss.Style
-	footerKey lipgloss.Style
-	helpPanel lipgloss.Style
-	helpTitle lipgloss.Style
-	helpKey   lipgloss.Style
-	empty     lipgloss.Style
-	errorBox  lipgloss.Style
+	app        lipgloss.Style
+	header     lipgloss.Style
+	brand      lipgloss.Style
+	path       lipgloss.Style
+	tab        lipgloss.Style
+	activeTab  lipgloss.Style
+	pane       lipgloss.Style
+	focusPane  lipgloss.Style
+	paneTitle  lipgloss.Style
+	row        lipgloss.Style
+	selected   lipgloss.Style
+	dim        lipgloss.Style
+	ready      lipgloss.Style
+	waiting    lipgloss.Style
+	doing      lipgloss.Style
+	blocked    lipgloss.Style
+	failed     lipgloss.Style
+	done       lipgloss.Style
+	canceled   lipgloss.Style
+	metadata   lipgloss.Style
+	section    lipgloss.Style
+	footer     lipgloss.Style
+	footerKey  lipgloss.Style
+	helpPanel  lipgloss.Style
+	helpTitle  lipgloss.Style
+	helpKey    lipgloss.Style
+	empty      lipgloss.Style
+	errorBox   lipgloss.Style
+	graphEdge  lipgloss.Style
+	graphNode  lipgloss.Style
+	graphEpic  lipgloss.Style
+	graphFocus lipgloss.Style
 }
 
 func newStyles(dark, noColor bool) styles {
@@ -113,5 +117,12 @@ func newStyles(dark, noColor bool) styles {
 			Border(lipgloss.NormalBorder(), false, false, false, true).
 			BorderForeground(red).
 			PaddingLeft(1),
+		graphEdge: lipgloss.NewStyle().Foreground(muted),
+		graphNode: lipgloss.NewStyle().Foreground(text),
+		graphEpic: lipgloss.NewStyle().Bold(true).Foreground(brand),
+		graphFocus: lipgloss.NewStyle().
+			Bold(true).
+			Foreground(text).
+			Background(selected),
 	}
 }

@@ -1,0 +1,30 @@
+ ERGO VIEW  product-roadmap                                    1 Overview  2 Board  3 Dependencies
+ 2 ready  1 doing  1 blocked  3 waiting
+╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ DEPENDENCY FLOW                                            adaptive  ·  left → right  ·  6 shown │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│ ╭✓ Build board and dep…╮     ┏◐ Add task editing wo…┓     ╭· Write install and k…╮               │
+│ │ DVIEW1 DONE ◇DESK01  │────▶┃ DEDIT1 DOING ◇DESK01 ┃────▶│ RDOCS1 WAITING ◇REL0…│               │
+│ ╰──────────────────────╯    │┗━━━━━━━━━━━━━━━━━━━━━━┛    │╰──────────────────────╯               │
+│                             │                            │                                       │
+│ ╭✓ Load Ergo repositor…╮    │╭○ Package ev.exe for …╮    │╭· Review editing flow…╮               │
+│ │ DLOAD1 DONE ◇DESK01  │────▶│ DWIN01 READY ◇DESK01 │    ▶│ TREVW1 WAITING ◇TEAM…│               │
+│ ╰──────────────────────╯     ╰──────────────────────╯     ╰──────────────────────╯               │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+│                                                                                                  │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic  ·  x clea

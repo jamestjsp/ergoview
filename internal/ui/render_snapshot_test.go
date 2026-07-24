@@ -28,6 +28,8 @@ func TestRenderSnapshots(t *testing.T) {
 		{name: "overview-narrow-dark", width: 72, height: 24, view: viewOverview, selected: "DEDIT1"},
 		{name: "overview-wide-light", width: 140, height: 32, view: viewOverview, selected: "DEDIT1", light: true},
 		{name: "board-standard-dark", width: 110, height: 30, view: viewBoard, selected: "RTHEME"},
+		{name: "dependencies-narrow-dark", width: 72, height: 24, view: viewDependencies, selected: "DEDIT1"},
+		{name: "dependencies-standard-light", width: 100, height: 30, view: viewDependencies, selected: "DEDIT1", light: true},
 		{name: "dependencies-wide-no-color", width: 140, height: 32, view: viewDependencies, selected: "DEDIT1", noColor: true},
 	}
 	for _, test := range tests {
