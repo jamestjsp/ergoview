@@ -123,6 +123,19 @@ func buildDependencyGraphLayout(request dependencyGraphRequest) dependencyGraphL
 	included := topology.project(request.FocusID, request.Scope, lineage, orientation, nodeWidth, nodeHeight, request.Width, request.Height)
 	nodes, edges := topology.visibleGraph(included)
 	nodes, edges = topology.addOverflowNodes(nodes, edges, request.FocusID, included)
+	if request.Scope == graphScopeAdaptive {
+		nodes, edges = topology.fitAdaptiveOverflow(
+			request.FocusID,
+			included,
+			nodes,
+			edges,
+			orientation,
+			nodeWidth,
+			nodeHeight,
+			request.Width,
+			request.Height,
+		)
+	}
 
 	ranks := rankDependencyGraph(nodes, edges, topology.order)
 	layers := orderDependencyLayers(ranks, edges, topology.order)
@@ -139,6 +152,50 @@ func buildDependencyGraphLayout(request dependencyGraphRequest) dependencyGraphL
 		Nodes:       positioned,
 		Edges:       edges,
 	}
+}
+
+func (t graphTopology) fitAdaptiveOverflow(
+	focusID string,
+	visible map[string]bool,
+	nodes []dependencyGraphNode,
+	edges []dependencyGraphEdge,
+	orientation graphOrientation,
+	nodeWidth int,
+	nodeHeight int,
+	width int,
+	height int,
+) ([]dependencyGraphNode, []dependencyGraphEdge) {
+	ranks := rankDependencyGraph(nodes, edges, t.order)
+	if graphRanksFit(ranks, orientation, nodeWidth, nodeHeight, width, height) {
+		return nodes, edges
+	}
+	var candidates []string
+	for _, id := range t.breadthFirst(focusID) {
+		if visible[id] {
+			candidates = append(candidates, id)
+		}
+	}
+	bestNodes := nodes
+	bestEdges := edges
+	low, high := 0, len(candidates)
+	for low <= high {
+		keep := low + (high-low)/2
+		trial := map[string]bool{focusID: true}
+		for _, id := range candidates[:keep] {
+			trial[id] = true
+		}
+		trialNodes, trialEdges := t.visibleGraph(trial)
+		trialNodes, trialEdges = t.addOverflowNodes(trialNodes, trialEdges, focusID, trial)
+		trialRanks := rankDependencyGraph(trialNodes, trialEdges, t.order)
+		if graphRanksFit(trialRanks, orientation, nodeWidth, nodeHeight, width, height) {
+			bestNodes = trialNodes
+			bestEdges = trialEdges
+			low = keep + 1
+			continue
+		}
+		high = keep - 1
+	}
+	return bestNodes, bestEdges
 }
 
 func newGraphTopology(snapshot ergo.Snapshot) graphTopology {
@@ -297,34 +354,25 @@ func (t graphTopology) addOverflowNodes(
 	focusID string,
 	visible map[string]bool,
 ) ([]dependencyGraphNode, []dependencyGraphEdge) {
-	var upstream []string
-	var downstream []string
+	upstreamSet, downstreamSet := t.classifyHidden(focusID, visible)
+	upstream := idSetKeys(upstreamSet, t.order)
+	downstream := idSetKeys(downstreamSet, t.order)
 	upstreamTargets := make(map[string]bool)
 	downstreamSources := make(map[string]bool)
-	for id := range t.reachable(focusID, t.backward) {
-		if visible[id] {
-			continue
-		}
-		upstream = append(upstream, id)
+	for _, id := range upstream {
 		for _, to := range t.forward[id] {
 			if visible[to] {
 				upstreamTargets[to] = true
 			}
 		}
 	}
-	for id := range t.reachable(focusID, t.forward) {
-		if visible[id] {
-			continue
-		}
-		downstream = append(downstream, id)
+	for _, id := range downstream {
 		for _, from := range t.backward[id] {
 			if visible[from] {
 				downstreamSources[from] = true
 			}
 		}
 	}
-	upstream = uniqueGraphIDs(upstream, t.order)
-	downstream = uniqueGraphIDs(downstream, t.order)
 	if len(upstream) > 0 {
 		nodes = append(nodes, dependencyGraphNode{
 			ID:        upstreamOverflowID,
@@ -352,6 +400,59 @@ func (t graphTopology) addOverflowNodes(
 	})
 	sortGraphEdges(edges, t.order)
 	return nodes, edges
+}
+
+func (t graphTopology) classifyHidden(focusID string, visible map[string]bool) (map[string]bool, map[string]bool) {
+	lineage := t.lineage(focusID)
+	upstreamReachable := t.reachable(focusID, t.backward)
+	downstreamReachable := t.reachable(focusID, t.forward)
+	upstream := make(map[string]bool)
+	downstream := make(map[string]bool)
+	for id := range lineage {
+		if visible[id] {
+			continue
+		}
+		switch {
+		case upstreamReachable[id]:
+			upstream[id] = true
+		case downstreamReachable[id]:
+			downstream[id] = true
+		}
+	}
+	for {
+		changed := false
+		for id := range lineage {
+			if visible[id] || upstream[id] || downstream[id] {
+				continue
+			}
+			for _, successor := range t.forward[id] {
+				if visible[successor] || upstream[successor] {
+					upstream[id] = true
+					changed = true
+					break
+				}
+			}
+			if upstream[id] {
+				continue
+			}
+			for _, predecessor := range t.backward[id] {
+				if visible[predecessor] || downstream[predecessor] {
+					downstream[id] = true
+					changed = true
+					break
+				}
+			}
+		}
+		if !changed {
+			break
+		}
+	}
+	for id := range lineage {
+		if !visible[id] && !upstream[id] && !downstream[id] {
+			downstream[id] = true
+		}
+	}
+	return upstream, downstream
 }
 
 func (t graphTopology) reachable(focusID string, adjacency map[string][]string) map[string]bool {

@@ -74,6 +74,35 @@ func TestDocumentationScreenshots(t *testing.T) {
 	}
 }
 
+func TestDependencyGraphUsesAvailableTerminalRealEstate(t *testing.T) {
+	for _, size := range []struct {
+		width  int
+		height int
+	}{
+		{width: 70, height: 24},
+		{width: 100, height: 30},
+		{width: 140, height: 36},
+	} {
+		model := renderFixtureModel(t, true)
+		model.rebuildRows("DEDIT1")
+		model.setView(viewDependencies)
+		model = resize(t, model, size.width, size.height)
+		content := model.View().Content
+		plain := ansi.Strip(content)
+		if !strings.Contains(plain, "DEPENDENCY FLOW") || !strings.Contains(plain, "DEDIT1") {
+			t.Fatalf("%dx%d graph lost its focus:\n%s", size.width, size.height, plain)
+		}
+		assertFits(t, content, size.width, size.height)
+		if size.width == 140 && size.height == 36 {
+			for _, expected := range []string{"CORE01 EPIC 1/1", "RTHEME READY", "RSIGN1 BLOCKED", "LAUNCH WAITING"} {
+				if !strings.Contains(plain, expected) {
+					t.Fatalf("%dx%d graph missing %q:\n%s", size.width, size.height, expected, plain)
+				}
+			}
+		}
+	}
+}
+
 func renderFixtureModel(t *testing.T, noColor bool) Model {
 	t.Helper()
 	t.Setenv("TERM", "dumb")
@@ -198,7 +227,7 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 	switch token {
 	case "ERGO", "VIEW":
 		return "#c4b5fd", "700", 1
-	case "WORK", "DETAIL", "PREREQUISITES", "SELECTED", "UNLOCKS", "Description", "Depends", "Progress":
+	case "WORK", "DETAIL", "DEPENDENCY", "FLOW", "PREREQUISITES", "SELECTED", "UNLOCKS", "Description", "Depends", "Progress":
 		return "#a78bfa", "700", 1
 	case "READY":
 		return "#fbbf24", "700", 1
@@ -261,7 +290,7 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 
 func isBoxDrawing(text string) bool {
 	for _, character := range text {
-		if !strings.ContainsRune("╭─╮│╰╯┌┐└┘├┤┬┴┼┃", character) {
+		if !strings.ContainsRune("╭─╮│╰╯┌┐└┘├┤┬┴┼┃┏┓┗┛━╔╗╚╝═║┄┆▶▼", character) {
 			return false
 		}
 	}
@@ -270,7 +299,7 @@ func isBoxDrawing(text string) bool {
 
 func isFixtureID(token string) bool {
 	switch token {
-	case "DESK01", "DLOAD1", "DVIEW1", "DEDIT1", "DWIN01", "REL001", "RDOCS1", "RTHEME", "RSIGN1", "TEAM01", "TDEMO1", "TREVW1", "LAUNCH":
+	case "DESK01", "DLOAD1", "DVIEW1", "DEDIT1", "DWIN01", "CORE01", "CORECH", "REL001", "RDOCS1", "RTHEME", "RSIGN1", "TEAM01", "TDEMO1", "TREVW1", "LAUNCH":
 		return true
 	default:
 		return false
@@ -279,7 +308,7 @@ func isFixtureID(token string) bool {
 
 func isFooterKey(token string) bool {
 	switch token {
-	case "j/k", "tab", "enter", "a", "n/p", "n", "1/2/3", "/", "f", "e", "x", "?", "q":
+	case "j/k", "h/j/k/l", "tab", "enter", "esc", "d", "a", "n/p", "n", "1/2/3", "/", "f", "e", "x", "?", "q":
 		return true
 	default:
 		return false

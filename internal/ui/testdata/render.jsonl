@@ -4,6 +4,8 @@
 {"type":"new_task","ts":"2026-07-23T10:03:00Z","data":{"id":"DEDIT1","uuid":"10000000-0000-0000-0000-000000000004","epic_id":"DESK01","state":"doing","title":"Add task editing workflows","body":"## Goal\nCreate fast, safe task editing without bypassing Ergo.\n\n### Done when\n- Claim, complete, block, and release from the TUI.\n- Keep command errors in context.\n- Reload the selected task after every mutation.\n\nCurrent focus: validate the complete flow on macOS, Linux, and Windows.","created_at":"2026-07-23T10:03:00Z"}}
 {"type":"claim","ts":"2026-07-23T10:03:10Z","data":{"id":"DEDIT1","agent_id":"codex@workstation","ts":"2026-07-23T10:03:10Z"}}
 {"type":"new_task","ts":"2026-07-23T10:04:00Z","data":{"id":"DWIN01","uuid":"10000000-0000-0000-0000-000000000005","epic_id":"DESK01","state":"todo","title":"Package ev.exe for Windows","body":"Build AMD64 and ARM64 archives.","created_at":"2026-07-23T10:04:00Z"}}
+{"type":"new_task","ts":"2026-07-23T10:04:10Z","data":{"id":"CORE01","uuid":"10000000-0000-0000-0000-000000000014","epic_id":"","state":"todo","title":"Graph foundations","body":"Stable graph semantics shared by every view.","created_at":"2026-07-23T10:04:10Z"}}
+{"type":"new_task","ts":"2026-07-23T10:04:20Z","data":{"id":"CORECH","uuid":"10000000-0000-0000-0000-000000000015","epic_id":"CORE01","state":"done","title":"Define dependency semantics","body":"Keep hierarchy and blocking edges distinct.","created_at":"2026-07-23T10:04:20Z"}}
 {"type":"new_task","ts":"2026-07-23T10:05:00Z","data":{"id":"REL001","uuid":"10000000-0000-0000-0000-000000000006","epic_id":"","state":"todo","title":"Release readiness","body":"## Goal\nMake every supported platform feel first class.","created_at":"2026-07-23T10:05:00Z"}}
 {"type":"new_task","ts":"2026-07-23T10:06:00Z","data":{"id":"RDOCS1","uuid":"10000000-0000-0000-0000-000000000007","epic_id":"REL001","state":"todo","title":"Write install and keyboard guide","body":"Document discovery, views, and actions.","created_at":"2026-07-23T10:06:00Z"}}
 {"type":"new_task","ts":"2026-07-23T10:07:00Z","data":{"id":"RTHEME","uuid":"10000000-0000-0000-0000-000000000008","epic_id":"REL001","state":"todo","title":"Polish light and dark themes","body":"Keep status readable without relying on color alone.","created_at":"2026-07-23T10:07:00Z"}}
@@ -14,9 +16,11 @@
 {"type":"new_task","ts":"2026-07-23T10:12:00Z","data":{"id":"LAUNCH","uuid":"10000000-0000-0000-0000-000000000013","epic_id":"","state":"todo","title":"Publish the first public release","body":"Tag the verified main commit and publish archives.","created_at":"2026-07-23T10:12:00Z"}}
 {"type":"link","ts":"2026-07-23T10:13:00Z","data":{"from_id":"DEDIT1","to_id":"DLOAD1","type":"depends"}}
 {"type":"link","ts":"2026-07-23T10:13:01Z","data":{"from_id":"DEDIT1","to_id":"DVIEW1","type":"depends"}}
+{"type":"link","ts":"2026-07-23T10:13:01.5Z","data":{"from_id":"DEDIT1","to_id":"CORE01","type":"depends"}}
 {"type":"link","ts":"2026-07-23T10:13:02Z","data":{"from_id":"DWIN01","to_id":"DLOAD1","type":"depends"}}
 {"type":"link","ts":"2026-07-23T10:13:03Z","data":{"from_id":"RDOCS1","to_id":"DEDIT1","type":"depends"}}
 {"type":"link","ts":"2026-07-23T10:13:04Z","data":{"from_id":"TREVW1","to_id":"DEDIT1","type":"depends"}}
-{"type":"link","ts":"2026-07-23T10:13:05Z","data":{"from_id":"LAUNCH","to_id":"DESK01","type":"depends"}}
-{"type":"link","ts":"2026-07-23T10:13:06Z","data":{"from_id":"LAUNCH","to_id":"REL001","type":"depends"}}
-{"type":"link","ts":"2026-07-23T10:13:07Z","data":{"from_id":"LAUNCH","to_id":"TEAM01","type":"depends"}}
+{"type":"link","ts":"2026-07-23T10:13:08Z","data":{"from_id":"LAUNCH","to_id":"RDOCS1","type":"depends"}}
+{"type":"link","ts":"2026-07-23T10:13:09Z","data":{"from_id":"LAUNCH","to_id":"TREVW1","type":"depends"}}
+{"type":"link","ts":"2026-07-23T10:13:10Z","data":{"from_id":"LAUNCH","to_id":"RTHEME","type":"depends"}}
+{"type":"link","ts":"2026-07-23T10:13:11Z","data":{"from_id":"LAUNCH","to_id":"RSIGN1","type":"depends"}}

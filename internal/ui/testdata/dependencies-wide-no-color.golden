@@ -1,29 +1,29 @@
  ERGO VIEW  product-roadmap                                                                            1 Overview  2 Board  3 Dependencies
  2 ready  1 doing  1 blocked  3 waiting
 ╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ DEPENDENCY FLOW                                                                                    adaptive  ·  left → right  ·  6 shown │
+│ DEPENDENCY FLOW                                                                                   adaptive  ·  left → right  ·  10 shown │
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│ ╭✓ Build board and depen…╮     ┏◐ Add task editing work…┓     ╭· Write install and key…╮                                                 │
-│ │ DVIEW1 DONE ◇DESK01    │────▶┃ DEDIT1 DOING ◇DESK01   ┃────▶│ RDOCS1 WAITING ◇REL001 │                                                 │
-│ ╰────────────────────────╯    │┗━━━━━━━━━━━━━━━━━━━━━━━━┛    │╰────────────────────────╯                                                 │
-│                               │                              │                                                                           │
-│ ╭✓ Load Ergo repositories╮    │╭○ Package ev.exe for Wi…╮    │╭· Review editing flow w…╮                                                 │
-│ │ DLOAD1 DONE ◇DESK01    │────▶│ DWIN01 READY ◇DESK01   │    ▶│ TREVW1 WAITING ◇TEAM01 │                                                 │
-│ ╰────────────────────────╯     ╰────────────────────────╯     ╰────────────────────────╯                                                 │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
-│                                                                                                                                          │
+│ ╭✓ Build board and depen…╮                                                                                                               │
+│ │ DVIEW1 DONE ◇DESK01    │────╮                                                                                                          │
+│ ╰────────────────────────╯    │                                                                                                          │
+│                               │                                                                                                          │
+│ ╔◆ Graph foundations═════╗    │                                                                                                          │
+│ ║ CORE01 EPIC 1/1        ║────┤                                                                                                          │
+│ ╚════════════════════════╝    │┏◐ Add task editing work…┓     ╭· Write install and key…╮                                                 │
+│                               ▶┃ DEDIT1 DOING ◇DESK01   ┃────▶│ RDOCS1 WAITING ◇REL001 │────╮                                            │
+│ ╭○ Polish light and dark…╮    │┗━━━━━━━━━━━━━━━━━━━━━━━━┛    │╰────────────────────────╯    │╭· Publish the first pub…╮                  │
+│ │ RTHEME READY ◇REL001   │────┼──────────────────────────────┼──────────────────────────────▶│ LAUNCH WAITING         │                  │
+│ ╰────────────────────────╯    │╭○ Package ev.exe for Wi…╮    │╭· Review editing flow w…╮    │╰────────────────────────╯                  │
+│                               ▶│ DWIN01 READY ◇DESK01   │    ▶│ TREVW1 WAITING ◇TEAM01 │────┤                                            │
+│ ╭! Configure release sig…╮    │╰────────────────────────╯     ╰────────────────────────╯    │                                            │
+│ │ RSIGN1 BLOCKED ◇REL001 │────┼─────────────────────────────────────────────────────────────╯                                            │
+│ ╰────────────────────────╯    │                                                                                                          │
+│                               │                                                                                                          │
+│ ╭✓ Load Ergo repositories╮    │                                                                                                          │
+│ │ DLOAD1 DONE ◇DESK01    │────╯                                                                                                          │
+│ ╰────────────────────────╯                                                                                                               │
 │                                                                                                                                          │
 │                                                                                                                                          │
 │                                                                                                                                          │
