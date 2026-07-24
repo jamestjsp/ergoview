@@ -93,3 +93,8 @@
 {"type":"state","ts":"2026-07-24T02:23:32.505229Z","data":{"id":"JRLQU5","state":"done","ts":"2026-07-24T02:23:32.505229Z"}}
 {"type":"claim","ts":"2026-07-24T02:23:40.280433Z","data":{"id":"ADD2TH","agent_id":"fable@claude-code","ts":"2026-07-24T02:23:40.280433Z"}}
 {"type":"state","ts":"2026-07-24T02:23:40.280433Z","data":{"id":"ADD2TH","state":"doing","ts":"2026-07-24T02:23:40.280433Z"}}
+{"type":"message","ts":"2026-07-24T02:25:00.275652Z","data":{"task_id":"ADD2TH","kind":"done","text":"Progress bars in outline, graph epic nodes, and detail; goldens regenerated; all tests pass","ts":"2026-07-24T02:25:00.275652Z"}}
+{"type":"unclaim","ts":"2026-07-24T02:25:00.275652Z","data":{"id":"ADD2TH","ts":"2026-07-24T02:25:00.275652Z"}}
+{"type":"state","ts":"2026-07-24T02:25:00.275652Z","data":{"id":"ADD2TH","state":"done","ts":"2026-07-24T02:25:00.275652Z"}}
+{"type":"claim","ts":"2026-07-24T02:25:00.280655Z","data":{"id":"ZTAIZN","agent_id":"fable@claude-code","ts":"2026-07-24T02:25:00.280655Z"}}
+{"type":"state","ts":"2026-07-24T02:25:00.280655Z","data":{"id":"ZTAIZN","state":"doing","ts":"2026-07-24T02:25:00.280655Z"}}

@@ -284,7 +284,20 @@ func (m Model) renderFooter() string {
 
 func (m Model) renderFooterItems(items []string) string {
 	width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
-	content := ansi.Truncate(strings.Join(items, "  ·  "), width, "")
+	var content string
+	for _, item := range items {
+		candidate := item
+		if content != "" {
+			candidate = content + "  ·  " + item
+		}
+		if lipgloss.Width(candidate) > width {
+			break
+		}
+		content = candidate
+	}
+	if content == "" && len(items) > 0 {
+		content = ansi.Truncate(items[0], width, "…")
+	}
 	return m.styles.footer.Width(m.width).Render(content)
 }
 

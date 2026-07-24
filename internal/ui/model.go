@@ -177,6 +177,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		updated, command := m.handleActionResult(message)
 		return updated, command
 	case tea.KeyPressMsg:
+		m.status = ""
 		if m.dialog != nil {
 			updated, command := m.updateDialog(message)
 			return updated, command
