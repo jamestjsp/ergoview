@@ -129,7 +129,7 @@ func (m Model) renderOutlinePane(width int) string {
 		lines = append(lines, m.renderRow(task, item.depth, innerWidth, index == m.selected))
 	}
 	if len(m.rows) == 0 {
-		lines = append(lines, m.styles.empty.Render("No Ergo tasks yet."))
+		lines = append(lines, m.styles.empty.Render("No Ergo tasks yet — press n to create one."))
 	}
 	for len(lines) < paneHeight {
 		lines = append(lines, "")

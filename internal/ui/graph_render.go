@@ -69,7 +69,7 @@ func (m Model) renderDependencies() string {
 	selected, ok := m.selectedTask()
 	if !ok {
 		return style.Width(m.width).Height(m.contentHeight()).Render(
-			m.styles.empty.Render("No task matches the current filters."),
+			m.styles.empty.Render("No task matches the current filters — x clears them."),
 		)
 	}
 	if contentWidth < 12 || contentHeight < 6 {
@@ -337,7 +337,11 @@ func (c *graphCanvas) drawDependencyNode(node dependencyGraphNode, selected, foc
 		stateRole = graphRoleEpic
 	}
 	c.drawText(rect.X+1, rect.Y, symbol, stateRole, 1)
-	c.drawText(rect.X+2, rect.Y, " "+node.Task.Title, textRole, rect.Width-3)
+	title := " " + node.Task.Title
+	if lipgloss.Width(title)+1 <= rect.Width-3 {
+		title += " "
+	}
+	c.drawText(rect.X+2, rect.Y, title, textRole, rect.Width-3)
 
 	idRole := graphRoleMetadata
 	if selected {

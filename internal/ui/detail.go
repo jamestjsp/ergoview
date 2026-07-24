@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"charm.land/glamour/v2"
+	"charm.land/lipgloss/v2"
 
 	"github.com/jamestjsp/ergoview/internal/ergo"
 )
@@ -73,7 +74,7 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 		content.WriteString("\n")
 		for _, message := range task.Messages {
 			content.WriteString("  ")
-			content.WriteString(strings.ToUpper(message.Kind))
+			content.WriteString(m.messageKindStyle(message.Kind).Render(strings.ToUpper(message.Kind)))
 			content.WriteString("  ")
 			content.WriteString(message.Text)
 			content.WriteString("\n")
@@ -93,6 +94,23 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 		}
 	}
 	return strings.TrimSpace(content.String())
+}
+
+func (m Model) messageKindStyle(kind string) lipgloss.Style {
+	switch kind {
+	case "done":
+		return m.styles.done
+	case "block":
+		return m.styles.blocked
+	case "cancel":
+		return m.styles.canceled
+	case "release":
+		return m.styles.ready
+	case "claim":
+		return m.styles.doing
+	default:
+		return m.styles.metadata
+	}
 }
 
 func (m Model) taskLabel(id string) string {
