@@ -7,16 +7,26 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"sync"
 )
 
 type commandBuilder func(context.Context, string, ...string) *exec.Cmd
 
 type Runner struct {
-	binary string
+	binary *binaryPath
 	root   string
 	agent  string
 	build  commandBuilder
+}
+
+type binaryPath struct {
+	name     string
+	lookPath func(string) (string, error)
+	once     sync.Once
+	path     string
+	err      error
 }
 
 func NewRunner(binary, root, agent string) *Runner {
@@ -24,7 +34,7 @@ func NewRunner(binary, root, agent string) *Runner {
 		binary = "ergo"
 	}
 	return &Runner{
-		binary: binary,
+		binary: &binaryPath{name: binary, lookPath: exec.LookPath},
 		root:   root,
 		agent:  agent,
 		build:  exec.CommandContext,
@@ -46,12 +56,16 @@ func (r *Runner) Run(ctx context.Context, input io.Reader, args ...string) (stri
 		commandArgs = append(commandArgs, "--agent", r.agent)
 	}
 	commandArgs = append(commandArgs, args...)
-	command := r.build(ctx, r.binary, commandArgs...)
+	binary, err := r.binary.resolve()
+	if err != nil {
+		return "", &CommandError{Args: append([]string(nil), args...), Err: err}
+	}
+	command := r.build(ctx, binary, commandArgs...)
 	command.Stdin = input
 	var output bytes.Buffer
 	command.Stdout = &output
 	command.Stderr = &output
-	err := command.Run()
+	err = command.Run()
 	text := strings.TrimSpace(output.String())
 	if err == nil {
 		return text, nil
@@ -64,6 +78,17 @@ func (r *Runner) Run(ctx context.Context, input io.Reader, args ...string) (stri
 		Output: text,
 		Err:    err,
 	}
+}
+
+func (binary *binaryPath) resolve() (string, error) {
+	binary.once.Do(func() {
+		if filepath.Base(binary.name) != binary.name {
+			binary.path = binary.name
+			return
+		}
+		binary.path, binary.err = binary.lookPath(binary.name)
+	})
+	return binary.path, binary.err
 }
 
 type CommandError struct {
