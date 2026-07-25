@@ -144,6 +144,23 @@ func BenchmarkLookPath(b *testing.B) {
 	}
 }
 
+func BenchmarkCachedRunnerBinaryPath(b *testing.B) {
+	runner := NewRunner("ergo", "", "")
+	runner.binary.lookPath = func(string) (string, error) {
+		return "/usr/local/bin/ergo", nil
+	}
+	if _, err := runner.binary.resolve(); err != nil {
+		b.Fatal(err)
+	}
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		if _, err := runner.binary.resolve(); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func benchmarkFile(b *testing.B) string {
 	b.Helper()
 	path := filepath.Join(b.TempDir(), "plans.jsonl")
