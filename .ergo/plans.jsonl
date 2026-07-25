@@ -129,3 +129,8 @@
 {"type":"state","ts":"2026-07-25T20:31:59.589564Z","data":{"id":"PNYOCY","state":"done","ts":"2026-07-25T20:31:59.589564Z"}}
 {"type":"claim","ts":"2026-07-25T20:32:03.414647Z","data":{"id":"KARLAW","agent_id":"codex@desktop","ts":"2026-07-25T20:32:03.414647Z"}}
 {"type":"state","ts":"2026-07-25T20:32:03.414647Z","data":{"id":"KARLAW","state":"doing","ts":"2026-07-25T20:32:03.414647Z"}}
+{"type":"message","ts":"2026-07-25T20:34:59.192768Z","data":{"task_id":"KARLAW","kind":"done","text":"Made copy payload context-aware from one resolver; covered raw task/container body copy, ID fallback, stale focus, keyboard/mouse parity, docs, goldens, and live OSC52 output; verified with race tests, vet, and gofmt.","ts":"2026-07-25T20:34:59.192768Z"}}
+{"type":"unclaim","ts":"2026-07-25T20:34:59.192768Z","data":{"id":"KARLAW","ts":"2026-07-25T20:34:59.192768Z"}}
+{"type":"state","ts":"2026-07-25T20:34:59.192768Z","data":{"id":"KARLAW","state":"done","ts":"2026-07-25T20:34:59.192768Z"}}
+{"type":"claim","ts":"2026-07-25T20:35:08.647746Z","data":{"id":"LJJP2Q","agent_id":"codex@desktop","ts":"2026-07-25T20:35:08.647746Z"}}
+{"type":"state","ts":"2026-07-25T20:35:08.647746Z","data":{"id":"LJJP2Q","state":"doing","ts":"2026-07-25T20:35:08.647746Z"}}

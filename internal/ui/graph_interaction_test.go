@@ -208,6 +208,8 @@ func TestGraphHelpAndFooterAreContextual(t *testing.T) {
 	}
 	updated, _ := model.Update(key("?"))
 	model = updated.(Model)
+	updated, _ = model.Update(key("pgdown"))
+	model = updated.(Model)
 	plain = ansi.Strip(model.View().Content)
 	if !strings.Contains(plain, "Dependency graph") || !strings.Contains(plain, "move spatially between nodes") {
 		t.Fatalf("graph help missing:\n%s", plain)

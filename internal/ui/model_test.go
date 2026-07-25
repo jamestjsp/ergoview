@@ -71,6 +71,119 @@ func TestKeyboardNavigationAndHelp(t *testing.T) {
 	}
 }
 
+func TestHelpOverlayFitsRegressionSizes(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		view   viewMode
+		width  int
+		height int
+	}{
+		{name: "overview height 24", view: viewOverview, width: 80, height: 24},
+		{name: "overview height 25", view: viewOverview, width: 80, height: 25},
+		{name: "dependencies height 29", view: viewDependencies, width: 100, height: 29},
+		{name: "dependencies height 30", view: viewDependencies, width: 100, height: 30},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := resize(t, testModel(t), test.width, test.height)
+			model.setView(test.view)
+			updated, _ := model.Update(key("?"))
+			model = updated.(Model)
+			assertFits(t, model.View().Content, test.width, test.height)
+		})
+	}
+}
+
+func TestHelpViewportScrollsWithKeysAndMouse(t *testing.T) {
+	openHelp := func() Model {
+		model := resize(t, testModel(t), 80, 24)
+		model.setView(viewDependencies)
+		updated, _ := model.Update(key("?"))
+		model = updated.(Model)
+		if model.helpView.TotalLineCount() <= model.helpView.Height() {
+			t.Fatal("help fixture does not overflow")
+		}
+		return model
+	}
+
+	for _, value := range []string{"j", "down", "pgdown"} {
+		t.Run("down "+value, func(t *testing.T) {
+			model := openHelp()
+			updated, _ := model.Update(key(value))
+			model = updated.(Model)
+			if model.helpView.YOffset() == 0 {
+				t.Fatalf("%s did not scroll help down", value)
+			}
+		})
+	}
+	for _, value := range []string{"k", "up", "pgup"} {
+		t.Run("up "+value, func(t *testing.T) {
+			model := openHelp()
+			model.helpView.GotoBottom()
+			offset := model.helpView.YOffset()
+			updated, _ := model.Update(key(value))
+			model = updated.(Model)
+			if model.helpView.YOffset() >= offset {
+				t.Fatalf("%s did not scroll help up", value)
+			}
+		})
+	}
+
+	model := openHelp()
+	updated, _ := model.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	model = updated.(Model)
+	if model.helpView.YOffset() == 0 {
+		t.Fatal("mouse wheel did not scroll help down")
+	}
+}
+
+func TestHelpViewportSignalsOverflowAndResets(t *testing.T) {
+	model := resize(t, testModel(t), 80, 24)
+	model.setView(viewDependencies)
+	updated, _ := model.Update(key("?"))
+	model = updated.(Model)
+
+	if plain := ansi.Strip(model.View().Content); !strings.Contains(plain, "more below") {
+		t.Fatalf("help missing lower-content signal:\n%s", plain)
+	}
+	model.helpView.GotoBottom()
+	if plain := ansi.Strip(model.View().Content); !strings.Contains(plain, "more above") {
+		t.Fatalf("help missing upper-content signal:\n%s", plain)
+	}
+
+	updated, _ = model.Update(key("esc"))
+	model = updated.(Model)
+	updated, _ = model.Update(key("?"))
+	model = updated.(Model)
+	if !model.helpView.AtTop() {
+		t.Fatalf("reopened help offset = %d, want top", model.helpView.YOffset())
+	}
+}
+
+func TestHelpCloseKeysAndClicksStayModal(t *testing.T) {
+	for _, value := range []string{"?", "esc", "q", "enter"} {
+		t.Run("close "+value, func(t *testing.T) {
+			model := resize(t, testModel(t), 80, 24)
+			updated, _ := model.Update(key("?"))
+			model = updated.(Model)
+			updated, _ = model.Update(key(value))
+			model = updated.(Model)
+			if model.help {
+				t.Fatalf("%s did not close help", value)
+			}
+		})
+	}
+
+	model := resize(t, testModel(t), 120, 28)
+	selected, focused := model.selected, model.focus
+	updated, _ := model.Update(key("?"))
+	model = updated.(Model)
+	updated, _ = model.Update(tea.MouseClickMsg{X: 4, Y: 4, Button: tea.MouseLeft})
+	model = updated.(Model)
+	if model.selected != selected || model.focus != focused {
+		t.Fatalf("help click changed selection/focus to %d/%d", model.selected, model.focus)
+	}
+}
+
 func TestCopySelectedIDWithKeyboard(t *testing.T) {
 	for _, id := range []string{"TOKENS", "EPIC01"} {
 		t.Run(id, func(t *testing.T) {
@@ -591,6 +704,14 @@ func key(value string) tea.KeyPressMsg {
 		return tea.KeyPressMsg(tea.Key{Code: tea.KeyEnter})
 	case "esc":
 		return tea.KeyPressMsg(tea.Key{Code: tea.KeyEscape})
+	case "up":
+		return tea.KeyPressMsg(tea.Key{Code: tea.KeyUp})
+	case "down":
+		return tea.KeyPressMsg(tea.Key{Code: tea.KeyDown})
+	case "pgup":
+		return tea.KeyPressMsg(tea.Key{Code: tea.KeyPgUp})
+	case "pgdown":
+		return tea.KeyPressMsg(tea.Key{Code: tea.KeyPgDown})
 	default:
 		return tea.KeyPressMsg(tea.Key{Code: []rune(value)[0], Text: value})
 	}
