@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -67,6 +68,114 @@ func TestKeyboardNavigationAndHelp(t *testing.T) {
 	model = updated.(Model)
 	if model.help {
 		t.Fatal("help overlay did not close")
+	}
+}
+
+func TestCopySelectedIDWithKeyboard(t *testing.T) {
+	for _, id := range []string{"TOKENS", "EPIC01"} {
+		t.Run(id, func(t *testing.T) {
+			model := resize(t, testModel(t), 120, 28)
+			model.rebuildRows(id)
+
+			updated, command := model.Update(key("c"))
+			model = updated.(Model)
+
+			if got := clipboardCommandText(t, command); got != id {
+				t.Fatalf("clipboard content = %q, want %s", got, id)
+			}
+			wantStatus := "Copied " + id + " to clipboard"
+			if model.status != wantStatus {
+				t.Fatalf("status = %q, want %q", model.status, wantStatus)
+			}
+		})
+	}
+}
+
+func TestCopySelectedIDFooterWorksAcrossViewsAndWidths(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		view   viewMode
+		width  int
+		height int
+	}{
+		{name: "narrow overview", view: viewOverview, width: 72, height: 24},
+		{name: "board", view: viewBoard, width: 120, height: 30},
+		{name: "dependencies", view: viewDependencies, width: 120, height: 30},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := testModel(t)
+			model.rebuildRows("TOKENS")
+			model.setView(test.view)
+			model = resize(t, model, test.width, test.height)
+
+			updated, command := model.Update(tea.MouseClickMsg{
+				X:      copyControlX(t, model),
+				Y:      model.height - 1,
+				Button: tea.MouseLeft,
+			})
+			model = updated.(Model)
+
+			if got := clipboardCommandText(t, command); got != "TOKENS" {
+				t.Fatalf("clipboard content = %q, want TOKENS", got)
+			}
+			if model.status != "Copied TOKENS to clipboard" {
+				t.Fatalf("status = %q", model.status)
+			}
+		})
+	}
+}
+
+func TestCopyControlIsUnavailableWithoutSelection(t *testing.T) {
+	model := New(ergo.Snapshot{Root: t.TempDir()}, Options{NoColor: true})
+	model = resize(t, model, 72, 24)
+
+	if strings.Contains(ansi.Strip(model.View().Content), "copy ID") {
+		t.Fatal("empty snapshot rendered a copy control")
+	}
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	if command != nil {
+		t.Fatal("empty snapshot produced a clipboard command")
+	}
+	if model.status != "" {
+		t.Fatalf("empty snapshot status = %q", model.status)
+	}
+}
+
+func TestCopyShortcutDoesNotInterceptSearchInput(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	updated, _ := model.Update(key("/"))
+	model = updated.(Model)
+
+	updated, _ = model.Update(key("c"))
+	model = updated.(Model)
+
+	if got := model.search.Value(); got != "c" {
+		t.Fatalf("search value = %q, want c", got)
+	}
+	if strings.Contains(model.status, "Copied") {
+		t.Fatalf("copy status set while searching: %q", model.status)
+	}
+}
+
+func TestCopyFooterDoesNotBypassActionMenu(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.rebuildRows("TOKENS")
+	copyX := copyControlX(t, model)
+	model.actionMenu = true
+
+	updated, command := model.Update(tea.MouseClickMsg{
+		X:      copyX,
+		Y:      model.height - 1,
+		Button: tea.MouseLeft,
+	})
+	model = updated.(Model)
+
+	if command != nil {
+		t.Fatal("action menu footer click produced a clipboard command")
+	}
+	if strings.Contains(model.status, "Copied") {
+		t.Fatalf("copy status set behind action menu: %q", model.status)
 	}
 }
 
@@ -261,6 +370,30 @@ func key(value string) tea.KeyPressMsg {
 	default:
 		return tea.KeyPressMsg(tea.Key{Code: []rune(value)[0], Text: value})
 	}
+}
+
+func clipboardCommandText(t *testing.T, command tea.Cmd) string {
+	t.Helper()
+	if command == nil {
+		t.Fatal("clipboard command is nil")
+	}
+	message := command()
+	value := reflect.ValueOf(message)
+	if value.Kind() != reflect.String {
+		t.Fatalf("clipboard command message type = %T", message)
+	}
+	return value.String()
+}
+
+func copyControlX(t *testing.T, model Model) int {
+	t.Helper()
+	lines := strings.Split(ansi.Strip(model.View().Content), "\n")
+	footer := lines[len(lines)-1]
+	index := strings.Index(footer, "c copy ID")
+	if index < 0 {
+		t.Fatalf("copy control not visible in footer:\n%s", ansi.Strip(model.View().Content))
+	}
+	return lipgloss.Width(footer[:index])
 }
 
 func assertFits(t *testing.T, content string, width, height int) {

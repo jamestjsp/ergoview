@@ -13,7 +13,7 @@ func TestFooterEndsOnCompleteItems(t *testing.T) {
 		"new": true, "search": true, "filter": true, "epic": true,
 		"clear": true, "help": true, "quit": true, "pane": true,
 		"detail": true, "node": true, "focus": true, "back": true,
-		"depth": true,
+		"depth": true, "ID": true,
 	}
 	for _, size := range []struct{ width, height int }{
 		{40, 20}, {60, 20}, {72, 24}, {90, 24}, {140, 32},

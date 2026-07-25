@@ -196,29 +196,30 @@
     <text x="34.2" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="57.4" lengthAdjust="spacingAndGlyphs">h/j/k/l</text>
     <text x="99.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">node</text>
     <text x="149.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="173.6" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="41.0" lengthAdjust="spacingAndGlyphs">enter</text>
-    <text x="222.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">focus</text>
-    <text x="280.2" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="304.8" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="24.6" lengthAdjust="spacingAndGlyphs">esc</text>
-    <text x="337.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">back</text>
-    <text x="386.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="411.4" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">d</text>
-    <text x="427.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">depth</text>
-    <text x="485.2" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="509.8" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">a</text>
-    <text x="526.2" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">actions</text>
+    <text x="173.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">c</text>
+    <text x="190.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">copy</text>
+    <text x="231.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="16.4" lengthAdjust="spacingAndGlyphs">ID</text>
+    <text x="263.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="288.4" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="41.0" lengthAdjust="spacingAndGlyphs">enter</text>
+    <text x="337.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">focus</text>
+    <text x="395.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="419.6" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="24.6" lengthAdjust="spacingAndGlyphs">esc</text>
+    <text x="452.4" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">back</text>
+    <text x="501.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="526.2" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">d</text>
+    <text x="542.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">depth</text>
     <text x="600.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="624.6" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">?</text>
-    <text x="641.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">help</text>
-    <text x="690.2" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="714.8" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">/</text>
-    <text x="731.2" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">search</text>
-    <text x="796.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="821.4" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="41.0" lengthAdjust="spacingAndGlyphs">1/2/3</text>
-    <text x="870.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">views</text>
-    <text x="928.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
-    <text x="952.6" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">q</text>
-    <text x="969.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">quit</text>
+    <text x="624.6" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">a</text>
+    <text x="641.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="57.4" lengthAdjust="spacingAndGlyphs">actions</text>
+    <text x="714.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="739.4" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">?</text>
+    <text x="755.8" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="32.8" lengthAdjust="spacingAndGlyphs">help</text>
+    <text x="805.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="829.6" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="8.2" lengthAdjust="spacingAndGlyphs">/</text>
+    <text x="846.0" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">search</text>
+    <text x="911.6" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">·</text>
+    <text x="936.2" y="603.0" fill="#f1f5f9" fill-opacity="1.00" font-weight="600" textLength="41.0" lengthAdjust="spacingAndGlyphs">1/2/3</text>
+    <text x="985.4" y="603.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">views</text>
     </g>
   </g>
 </svg>
