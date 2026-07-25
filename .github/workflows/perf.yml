@@ -1,0 +1,52 @@
+name: Perf
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "perf/**"
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    name: bench ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Runner facts
+        shell: bash
+        run: |
+          go version
+          go env GOOS GOARCH
+          nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo "$NUMBER_OF_PROCESSORS"
+
+      - name: Benchmark
+        shell: bash
+        run: |
+          go test ./... \
+            -run '^$' \
+            -bench . \
+            -benchtime 300ms \
+            -count 5 \
+            -timeout 30m \
+            2>&1 | tee "bench-${{ matrix.os }}.txt"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bench-${{ matrix.os }}
+          path: bench-${{ matrix.os }}.txt
