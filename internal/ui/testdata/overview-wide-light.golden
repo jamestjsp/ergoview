@@ -29,4 +29,4 @@
 │                                                        ││   • Reload the selected task after every mutation.                             │
 │                                                        ││                                                                                │
 ╰────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
- j/k move  ·  tab pane  ·  enter detail  ·  c copy ID  ·  a actions  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter  ·  e epic
+ j/k move  ·  tab pane  ·  enter detail  ·  x clear  ·  a actions  ·  c copy ID  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter
