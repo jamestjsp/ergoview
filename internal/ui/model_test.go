@@ -215,10 +215,10 @@ func TestCopyWritesSystemClipboardBeforeReportingSuccess(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	model.rebuildRows("TOKENS")
 	var written string
-	model.clipboardWriter = func(text string) error {
+	model.clipboard = newClipboardQueue(func(text string) error {
 		written = text
 		return nil
-	}
+	})
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
@@ -246,7 +246,7 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	model.rebuildRows("TOKENS")
 	writeErr := errors.New("system clipboard unavailable")
-	model.clipboardWriter = func(string) error { return writeErr }
+	model.clipboard = newClipboardQueue(func(string) error { return writeErr })
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
@@ -266,6 +266,47 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 		t.Fatalf("OSC52 fallback content = %q, want %q", got, message.target.text)
 	}
 	if model.status != "System clipboard unavailable; tried terminal clipboard" {
+		t.Fatalf("status = %q", model.status)
+	}
+}
+
+func TestLatestCopyRequestWins(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	var writes []string
+	model.clipboard = newClipboardQueue(func(text string) error {
+		writes = append(writes, text)
+		return nil
+	})
+
+	model.rebuildRows("TOKENS")
+	updated, firstCommand := model.Update(key("c"))
+	model = updated.(Model)
+	model.rebuildRows("SCHEMA")
+	updated, secondCommand := model.Update(key("c"))
+	model = updated.(Model)
+	newer := secondCommand().(clipboardWriteMsg)
+	older := firstCommand().(clipboardWriteMsg)
+
+	updated, fallback := model.Update(newer)
+	model = updated.(Model)
+	if fallback != nil {
+		t.Fatal("latest clipboard write produced a fallback")
+	}
+	updated, fallback = model.Update(older)
+	model = updated.(Model)
+	if fallback != nil {
+		t.Fatal("stale clipboard completion produced a fallback")
+	}
+
+	schema, ok := model.snapshot.Task("SCHEMA")
+	if !ok {
+		t.Fatal("SCHEMA not found")
+	}
+	want := taskReference(schema)
+	if len(writes) != 1 || writes[0] != want {
+		t.Fatalf("clipboard writes = %q, want only latest payload %q", writes, want)
+	}
+	if model.status != "Copied SCHEMA ID and title to clipboard" {
 		t.Fatalf("status = %q", model.status)
 	}
 }
@@ -748,7 +789,7 @@ func (source *stubSnapshotSource) LoadIfChanged() (ergo.Snapshot, bool, error) {
 func testModel(t *testing.T) Model {
 	t.Helper()
 	model := New(testSnapshot(t), Options{})
-	model.clipboardWriter = func(string) error { return nil }
+	model.clipboard = newClipboardQueue(func(string) error { return nil })
 	return model
 }
 

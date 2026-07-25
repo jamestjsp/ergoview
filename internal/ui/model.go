@@ -73,7 +73,7 @@ type Model struct {
 	snapshot          ergo.Snapshot
 	source            SnapshotSource
 	runner            CommandRunner
-	clipboardWriter   func(string) error
+	clipboard         *clipboardQueue
 	rows              []row
 	selected          int
 	focus             focus
@@ -107,15 +107,15 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 	search.Prompt = "/ "
 	search.CharLimit = 160
 	model := Model{
-		snapshot:        snapshot,
-		source:          options.Source,
-		runner:          options.Runner,
-		clipboardWriter: writeSystemClipboard,
-		dark:            true,
-		noColor:         noColor,
-		agent:           options.Agent,
-		styles:          newStyles(true, noColor),
-		search:          search,
+		snapshot:  snapshot,
+		source:    options.Source,
+		runner:    options.Runner,
+		clipboard: newClipboardQueue(writeSystemClipboard),
+		dark:      true,
+		noColor:   noColor,
+		agent:     options.Agent,
+		styles:    newStyles(true, noColor),
+		search:    search,
 		detail: viewport.New(
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
@@ -195,6 +195,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		updated, command := m.handleActionResult(message)
 		return updated, command
 	case clipboardWriteMsg:
+		if !m.clipboard.isLatest(message.sequence) {
+			return m, nil
+		}
 		if message.err != nil {
 			m.status = "System clipboard unavailable; tried terminal clipboard"
 			return m, tea.SetClipboard(message.target.text)
@@ -413,7 +416,7 @@ func (m *Model) copySelection() tea.Cmd {
 	if !ok {
 		return nil
 	}
-	return writeClipboard(m.clipboardWriter, target)
+	return m.clipboard.request(target)
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
