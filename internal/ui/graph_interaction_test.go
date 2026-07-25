@@ -147,7 +147,7 @@ func TestGraphFocusSurvivesResizeReloadAndMatchingFilter(t *testing.T) {
 
 	reloaded := model.snapshot
 	reloaded.Version = "graph-reload"
-	updated, _ := model.Update(snapshotLoadedMsg{snapshot: reloaded})
+	updated, _ := model.Update(snapshotLoadedMsg{snapshot: reloaded, changed: true})
 	model = updated.(Model)
 	if model.selectedID() != "B" || model.graphFocusID != "B" {
 		t.Fatalf("reload selection=%q focus=%q", model.selectedID(), model.graphFocusID)

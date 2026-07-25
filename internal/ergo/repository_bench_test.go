@@ -142,6 +142,76 @@ func BenchmarkRepositoryLoadByHistory(b *testing.B) {
 	}
 }
 
+func BenchmarkRepositoryLoadIfChangedIdleByHistory(b *testing.B) {
+	const taskCount = 100
+	for _, churn := range []int{0, 10, 50, 200} {
+		b.Run(fmt.Sprintf("churn=%d", churn), func(b *testing.B) {
+			repository := benchmarkChurnRepository(b, taskCount, churn)
+			if _, err := repository.Load(); err != nil {
+				b.Fatal(err)
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for range b.N {
+				if _, changed, err := repository.LoadIfChanged(); err != nil {
+					b.Fatal(err)
+				} else if changed {
+					b.Fatal("unchanged repository reported a reload")
+				}
+			}
+		})
+	}
+}
+
+func BenchmarkRepositoryLoadIfChangedAppendByHistory(b *testing.B) {
+	const taskCount = 100
+	for _, churn := range []int{0, 10, 50, 200} {
+		b.Run(fmt.Sprintf("churn=%d", churn), func(b *testing.B) {
+			repository := benchmarkChurnRepository(b, taskCount, churn)
+			if _, err := repository.Load(); err != nil {
+				b.Fatal(err)
+			}
+			path := repository.EventPath()
+			b.ReportAllocs()
+			b.ResetTimer()
+			for index := range b.N {
+				b.StopTimer()
+				appendBenchmarkStateEvent(b, path, index)
+				b.StartTimer()
+				if _, changed, err := repository.LoadIfChanged(); err != nil {
+					b.Fatal(err)
+				} else if !changed {
+					b.Fatal("appended event did not trigger a reload")
+				}
+			}
+		})
+	}
+}
+
+func appendBenchmarkStateEvent(b *testing.B, path string, index int) {
+	b.Helper()
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0)
+	if err != nil {
+		b.Fatal(err)
+	}
+	encoder := json.NewEncoder(file)
+	if err := encoder.Encode(map[string]any{
+		"type": "state",
+		"ts":   time.Date(2026, 7, 25, 12, 0, index, 0, time.UTC),
+		"data": map[string]any{
+			"id":    "T00001",
+			"state": []State{StateTodo, StateDoing}[index%2],
+			"ts":    time.Date(2026, 7, 25, 12, 0, index, 0, time.UTC),
+		},
+	}); err != nil {
+		file.Close()
+		b.Fatal(err)
+	}
+	if err := file.Close(); err != nil {
+		b.Fatal(err)
+	}
+}
+
 // benchmarkChurnRepository writes taskCount tasks and then replays churn rounds
 // of state changes and messages across them, without adding or removing tasks.
 func benchmarkChurnRepository(b *testing.B, taskCount, churn int) *Repository {
