@@ -134,3 +134,8 @@
 {"type":"state","ts":"2026-07-25T20:34:59.192768Z","data":{"id":"KARLAW","state":"done","ts":"2026-07-25T20:34:59.192768Z"}}
 {"type":"claim","ts":"2026-07-25T20:35:08.647746Z","data":{"id":"LJJP2Q","agent_id":"codex@desktop","ts":"2026-07-25T20:35:08.647746Z"}}
 {"type":"state","ts":"2026-07-25T20:35:08.647746Z","data":{"id":"LJJP2Q","state":"doing","ts":"2026-07-25T20:35:08.647746Z"}}
+{"type":"message","ts":"2026-07-25T20:39:30.915164Z","data":{"task_id":"LJJP2Q","kind":"done","text":"Bound help in a scrolling viewport with overflow signals, key/wheel controls, top reset, and modal click protection; verified 80x24 live and regression heights 24, 25, 29, and 30 with race tests, vet, and gofmt.","ts":"2026-07-25T20:39:30.915164Z"}}
+{"type":"unclaim","ts":"2026-07-25T20:39:30.915164Z","data":{"id":"LJJP2Q","ts":"2026-07-25T20:39:30.915164Z"}}
+{"type":"state","ts":"2026-07-25T20:39:30.915164Z","data":{"id":"LJJP2Q","state":"done","ts":"2026-07-25T20:39:30.915164Z"}}
+{"type":"claim","ts":"2026-07-25T20:39:35.4142Z","data":{"id":"BM53WE","agent_id":"codex@desktop","ts":"2026-07-25T20:39:35.4142Z"}}
+{"type":"state","ts":"2026-07-25T20:39:35.4142Z","data":{"id":"BM53WE","state":"doing","ts":"2026-07-25T20:39:35.4142Z"}}

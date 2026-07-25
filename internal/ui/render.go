@@ -64,6 +64,10 @@ func (m Model) viewContent() string {
 			}
 		}
 	}
+	body = strings.Join(
+		fitLines(strings.Split(body, "\n"), m.contentHeight(), m.width),
+		"\n",
+	)
 	footer := m.renderFooter()
 	return m.styles.app.Render(lipgloss.JoinVertical(lipgloss.Left, header, body, footer))
 }

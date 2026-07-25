@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -111,6 +112,111 @@ func TestCopyControlIsHiddenDuringModalInput(t *testing.T) {
 				t.Fatalf("modal footer exposes copy control: %q", footer)
 			}
 		})
+	}
+}
+
+func TestEveryViewOverlayFitsViewport(t *testing.T) {
+	type overlaySpec struct {
+		name  string
+		setup func(*Model)
+	}
+	overlays := []overlaySpec{
+		{name: "none"},
+		{name: "help", setup: func(model *Model) {
+			model.help = true
+			model.syncHelpView(true)
+		}},
+		{name: "action menu", setup: func(model *Model) {
+			model.actionMenu = true
+		}},
+	}
+	for _, kind := range []actionKind{
+		actionNewTask,
+		actionNewPlan,
+		actionClaim,
+		actionDone,
+		actionBlock,
+		actionCancel,
+		actionRelease,
+		actionRename,
+		actionBody,
+		actionMove,
+		actionSequence,
+		actionUnsequence,
+	} {
+		kind := kind
+		overlays = append(overlays, overlaySpec{
+			name: "dialog " + string(kind),
+			setup: func(model *Model) {
+				model.openDialog(kind)
+			},
+		})
+	}
+
+	views := []struct {
+		name string
+		view viewMode
+	}{
+		{name: "overview", view: viewOverview},
+		{name: "board", view: viewBoard},
+		{name: "dependencies", view: viewDependencies},
+	}
+	focuses := []struct {
+		name  string
+		focus focus
+	}{
+		{name: "outline", focus: focusOutline},
+		{name: "detail", focus: focusDetail},
+	}
+	sizes := []struct{ width, height int }{
+		{width: 40, height: 12},
+		{width: 72, height: 20},
+		{width: 80, height: 24},
+		{width: 100, height: 25},
+		{width: 120, height: 29},
+		{width: 120, height: 30},
+		{width: 180, height: 50},
+	}
+
+	for _, view := range views {
+		for _, overlay := range overlays {
+			for _, focused := range focuses {
+				for _, size := range sizes {
+					name := fmt.Sprintf(
+						"%s/%s/%s/%dx%d",
+						view.name,
+						overlay.name,
+						focused.name,
+						size.width,
+						size.height,
+					)
+					t.Run(name, func(t *testing.T) {
+						model := renderFixtureModel(t, true)
+						model.rebuildRows("DEDIT1")
+						model.setView(view.view)
+						model.focus = focused.focus
+						model = resize(t, model, size.width, size.height)
+						if overlay.setup != nil {
+							overlay.setup(&model)
+						}
+						assertRenderedSize(t, model.View().Content, size.width, size.height)
+					})
+				}
+			}
+		}
+	}
+}
+
+func assertRenderedSize(t *testing.T, content string, width, height int) {
+	t.Helper()
+	lines := strings.Split(content, "\n")
+	if len(lines) > height {
+		t.Fatalf("rendered height = %d, allowed = %d", len(lines), height)
+	}
+	for index, line := range lines {
+		if actual := ansi.StringWidth(line); actual > width {
+			t.Fatalf("line %d width = %d, allowed = %d: %q", index+1, actual, width, ansi.Strip(line))
+		}
 	}
 }
 
