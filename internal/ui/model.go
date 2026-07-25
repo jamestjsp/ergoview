@@ -386,6 +386,19 @@ func (m *Model) updateMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	return nil
 }
 
+func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
+	if message.Y != m.height-1 {
+		return nil
+	}
+	for _, placement := range m.footerPlacements(m.footerItems()) {
+		if placement.item.action == footerActionCopy &&
+			message.X >= placement.start && message.X < placement.end {
+			return m.copySelection()
+		}
+	}
+	return nil
+}
+
 func (m *Model) copySelection() tea.Cmd {
 	target, ok := m.selectedCopyTarget()
 	if !ok {
@@ -396,21 +409,22 @@ func (m *Model) copySelection() tea.Cmd {
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
-	task, ok := m.selectedTask()
+	id := m.selectedID()
+	body, ok := m.snapshot.TaskBody(id)
 	if !ok {
 		return copyTarget{}, false
 	}
-	if m.view == viewOverview && m.focus == focusDetail && strings.TrimSpace(task.Body) != "" {
+	if m.view == viewOverview && m.focus == focusDetail && strings.TrimSpace(body) != "" {
 		return copyTarget{
-			text:   task.Body,
+			text:   body,
 			label:  "copy body",
-			status: "Copied " + task.ID + " body to clipboard",
+			status: "Copied " + id + " body to clipboard",
 		}, true
 	}
 	return copyTarget{
-		text:   task.ID,
+		text:   id,
 		label:  "copy ID",
-		status: "Copied " + task.ID + " to clipboard",
+		status: "Copied " + id + " to clipboard",
 	}, true
 }
 
@@ -454,8 +468,8 @@ func (m Model) selectedTask() (ergo.Task, bool) {
 }
 
 func (m Model) selectedID() string {
-	if task, ok := m.selectedTask(); ok {
-		return task.ID
+	if len(m.rows) > 0 && m.selected >= 0 && m.selected < len(m.rows) {
+		return m.rows[m.selected].id
 	}
 	return ""
 }

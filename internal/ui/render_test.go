@@ -83,13 +83,41 @@ func TestCopyFooterPlacementPreservesPriorityHints(t *testing.T) {
 				}
 			}
 			if actionIndex < 0 || actionIndex+1 >= len(items) ||
-				items[actionIndex+1].action != footerActionCopyID {
+				items[actionIndex+1].action != footerActionCopy {
 				t.Fatalf("copy control is not ordered immediately after actions: %#v", items)
 			}
 			if !strings.Contains(footer, test.expected) {
 				t.Fatalf("footer missing %q: %q", test.expected, footer)
 			}
 		})
+	}
+}
+
+func TestCompactFooterItemsDoesNotAliasInput(t *testing.T) {
+	items := []footerItem{{content: "first"}, {}, {content: "second"}}
+	compacted := compactFooterItems(items)
+
+	compacted[0].content = "changed"
+	if items[0].content != "first" {
+		t.Fatalf("compactFooterItems mutated input: %#v", items)
+	}
+}
+
+func TestFooterPlacementIncludesStyleFrames(t *testing.T) {
+	model := renderFixtureModel(t, true)
+	model.width = 100
+	model.styles.app = model.styles.app.MarginLeft(2).BorderLeft(true).PaddingLeft(3)
+	model.styles.footer = model.styles.footer.MarginLeft(4).BorderLeft(true).PaddingLeft(5)
+
+	placements := model.footerPlacements([]footerItem{{content: "copy"}})
+	want := model.styles.app.GetMarginLeft() +
+		model.styles.app.GetBorderLeftSize() +
+		model.styles.app.GetPaddingLeft() +
+		model.styles.footer.GetMarginLeft() +
+		model.styles.footer.GetBorderLeftSize() +
+		model.styles.footer.GetPaddingLeft()
+	if len(placements) != 1 || placements[0].start != want {
+		t.Fatalf("footer placement = %#v, want start %d", placements, want)
 	}
 }
 

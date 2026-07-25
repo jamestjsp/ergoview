@@ -471,7 +471,7 @@ func TestCopyFooterHitBoundsAreHalfOpen(t *testing.T) {
 		model.rebuildRows("TOKENS")
 		return model
 	}
-	placement := footerPlacementForAction(t, newModel(), footerActionCopyID)
+	placement := footerPlacementForAction(t, newModel(), footerActionCopy)
 
 	model := newModel()
 	updated, command := model.Update(tea.MouseClickMsg{
