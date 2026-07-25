@@ -417,7 +417,7 @@ func (m Model) helpContent() string {
 		m.styles.helpKey.Render("f") + "              cycle state filter",
 		m.styles.helpKey.Render("e") + "              focus selected container",
 		m.styles.helpKey.Render("x") + "              clear search and filters",
-		m.styles.helpKey.Render("c") + "              copy selected ID or focused detail",
+		m.styles.helpKey.Render("c") + "              copy selected ID and title, or focused detail",
 		m.styles.helpKey.Render("a") + "              selected task actions",
 		m.styles.helpKey.Render("n / p") + "          new task / container plan",
 		m.styles.helpKey.Render("tab") + "            switch pane",
