@@ -50,6 +50,10 @@ type row struct {
 	depth int
 }
 
+type copyTarget struct {
+	text, label, status string
+}
+
 type SnapshotSource interface {
 	LoadIfChanged() (ergo.Snapshot, bool, error)
 }
@@ -246,7 +250,7 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 		}
 		return nil
 	case "c":
-		return m.copySelectedID()
+		return m.copySelection()
 	case "/":
 		m.searching = true
 		m.search.Focus()
@@ -361,13 +365,32 @@ func (m *Model) updateMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	return nil
 }
 
-func (m *Model) copySelectedID() tea.Cmd {
-	task, ok := m.selectedTask()
+func (m *Model) copySelection() tea.Cmd {
+	target, ok := m.selectedCopyTarget()
 	if !ok {
 		return nil
 	}
-	m.status = "Copied " + task.ID + " to clipboard"
-	return tea.SetClipboard(task.ID)
+	m.status = target.status
+	return tea.SetClipboard(target.text)
+}
+
+func (m Model) selectedCopyTarget() (copyTarget, bool) {
+	task, ok := m.selectedTask()
+	if !ok {
+		return copyTarget{}, false
+	}
+	if m.view == viewOverview && m.focus == focusDetail && strings.TrimSpace(task.Body) != "" {
+		return copyTarget{
+			text:   task.Body,
+			label:  "copy body",
+			status: "Copied " + task.ID + " body to clipboard",
+		}, true
+	}
+	return copyTarget{
+		text:   task.ID,
+		label:  "copy ID",
+		status: "Copied " + task.ID + " to clipboard",
+	}, true
 }
 
 func (m *Model) toggleFocus() {

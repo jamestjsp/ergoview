@@ -24,9 +24,12 @@ func TestRenderSnapshots(t *testing.T) {
 		selected string
 		light    bool
 		noColor  bool
+		detail   bool
 	}{
 		{name: "overview-narrow-dark", width: 72, height: 24, view: viewOverview, selected: "DEDIT1"},
+		{name: "overview-narrow-detail-dark", width: 72, height: 24, view: viewOverview, selected: "DEDIT1", detail: true},
 		{name: "overview-wide-light", width: 140, height: 32, view: viewOverview, selected: "DEDIT1", light: true},
+		{name: "overview-wide-detail-light", width: 140, height: 32, view: viewOverview, selected: "DEDIT1", light: true, detail: true},
 		{name: "board-standard-dark", width: 110, height: 30, view: viewBoard, selected: "RTHEME"},
 		{name: "dependencies-narrow-dark", width: 72, height: 24, view: viewDependencies, selected: "DEDIT1"},
 		{name: "dependencies-standard-light", width: 100, height: 30, view: viewDependencies, selected: "DEDIT1", light: true},
@@ -37,6 +40,9 @@ func TestRenderSnapshots(t *testing.T) {
 			model := renderFixtureModel(t, test.noColor)
 			model.rebuildRows(test.selected)
 			model.setView(test.view)
+			if test.detail {
+				model.focus = focusDetail
+			}
 			if test.light {
 				updated, _ := model.Update(tea.BackgroundColorMsg{Color: color.White})
 				model = updated.(Model)
@@ -56,8 +62,9 @@ func TestDocumentationScreenshots(t *testing.T) {
 		title    string
 		view     viewMode
 		selected string
+		detail   bool
 	}{
-		{name: "overview", title: "Overview", view: viewOverview, selected: "DEDIT1"},
+		{name: "overview", title: "Overview", view: viewOverview, selected: "DEDIT1", detail: true},
 		{name: "board", title: "Board", view: viewBoard, selected: "RTHEME"},
 		{name: "dependencies", title: "Dependencies", view: viewDependencies, selected: "DEDIT1"},
 	}
@@ -66,6 +73,9 @@ func TestDocumentationScreenshots(t *testing.T) {
 			model := renderFixtureModel(t, false)
 			model.rebuildRows(test.selected)
 			model.setView(test.view)
+			if test.detail {
+				model.focus = focusDetail
+			}
 			model = resize(t, model, 124, 30)
 			model.syncDetail()
 			svg := terminalSVG(ansi.Strip(model.View().Content), "Ergo View  ·  "+test.title, test.title)

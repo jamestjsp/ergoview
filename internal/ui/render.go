@@ -254,14 +254,15 @@ func (m Model) footerItem(key, label string) footerItem {
 	return footerItem{content: m.styles.footerKey.Render(key) + " " + label}
 }
 
-func (m Model) copyIDFooterItem() footerItem {
+func (m Model) copyFooterItem() footerItem {
 	if m.dialog != nil || m.actionMenu || m.searching {
 		return footerItem{}
 	}
-	if _, ok := m.selectedTask(); !ok {
+	target, ok := m.selectedCopyTarget()
+	if !ok {
 		return footerItem{}
 	}
-	item := m.footerItem("c", "copy ID")
+	item := m.footerItem("c", target.label)
 	item.action = footerActionCopyID
 	return item
 }
@@ -325,7 +326,7 @@ func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	for _, placement := range m.footerPlacements(m.footerItems()) {
 		if placement.item.action == footerActionCopyID &&
 			message.X >= placement.start && message.X < placement.end {
-			return m.copySelectedID()
+			return m.copySelection()
 		}
 	}
 	return nil
@@ -344,7 +345,7 @@ func (m Model) footerItems() []footerItem {
 		}
 		items = append(items,
 			m.footerItem("a", "actions"),
-			m.copyIDFooterItem(),
+			m.copyFooterItem(),
 			m.footerItem("?", "help"),
 		)
 		if m.width >= narrowBreakpoint {
@@ -361,7 +362,7 @@ func (m Model) footerItems() []footerItem {
 			m.footerItem("1/2/3", "views"),
 			m.footerItem("/", "search"),
 			m.footerItem("a", "actions"),
-			m.copyIDFooterItem(),
+			m.copyFooterItem(),
 			m.footerItem("n", "new"),
 			m.footerItem("?", "help"),
 		})
@@ -370,7 +371,7 @@ func (m Model) footerItems() []footerItem {
 		m.footerItem("j/k", "move"),
 		m.footerItem("x", "clear"),
 		m.footerItem("a", "actions"),
-		m.copyIDFooterItem(),
+		m.copyFooterItem(),
 		m.footerItem("n/p", "new"),
 		m.footerItem("1/2/3", "views"),
 		m.footerItem("/", "search"),
@@ -403,7 +404,7 @@ func (m Model) renderHelp() string {
 		m.styles.helpKey.Render("f") + "              cycle state filter",
 		m.styles.helpKey.Render("e") + "              focus selected container",
 		m.styles.helpKey.Render("x") + "              clear search and filters",
-		m.styles.helpKey.Render("c") + "              copy selected task or container ID",
+		m.styles.helpKey.Render("c") + "              copy selected ID or focused detail body",
 		m.styles.helpKey.Render("a") + "              selected task actions",
 		m.styles.helpKey.Render("n / p") + "          new task / container plan",
 		m.styles.helpKey.Render("tab") + "            switch pane",

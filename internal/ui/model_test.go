@@ -91,6 +91,115 @@ func TestCopySelectedIDWithKeyboard(t *testing.T) {
 	}
 }
 
+func TestCopySelectionMatchesViewFocusAndBody(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		id         string
+		view       viewMode
+		focus      focus
+		want       string
+		wantLabel  string
+		wantStatus string
+	}{
+		{
+			name:       "overview outline copies task ID",
+			id:         "TOKENS",
+			view:       viewOverview,
+			focus:      focusOutline,
+			want:       "TOKENS",
+			wantLabel:  "copy ID",
+			wantStatus: "Copied TOKENS to clipboard",
+		},
+		{
+			name:       "overview detail copies task body",
+			id:         "TOKENS",
+			view:       viewOverview,
+			focus:      focusDetail,
+			want:       "Use rotating refresh tokens.",
+			wantLabel:  "copy body",
+			wantStatus: "Copied TOKENS body to clipboard",
+		},
+		{
+			name:       "empty detail body falls back to ID",
+			id:         "SCHEMA",
+			view:       viewOverview,
+			focus:      focusDetail,
+			want:       "SCHEMA",
+			wantLabel:  "copy ID",
+			wantStatus: "Copied SCHEMA to clipboard",
+		},
+		{
+			name:       "board ignores stale detail focus",
+			id:         "TOKENS",
+			view:       viewBoard,
+			focus:      focusDetail,
+			want:       "TOKENS",
+			wantLabel:  "copy ID",
+			wantStatus: "Copied TOKENS to clipboard",
+		},
+		{
+			name:       "dependencies ignore stale detail focus",
+			id:         "TOKENS",
+			view:       viewDependencies,
+			focus:      focusDetail,
+			want:       "TOKENS",
+			wantLabel:  "copy ID",
+			wantStatus: "Copied TOKENS to clipboard",
+		},
+		{
+			name:       "container detail copies container body",
+			id:         "EPIC01",
+			view:       viewOverview,
+			focus:      focusDetail,
+			want:       "## Goal\nShip auth",
+			wantLabel:  "copy body",
+			wantStatus: "Copied EPIC01 body to clipboard",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := testModel(t)
+			model.rebuildRows(test.id)
+			model.setView(test.view)
+			model.focus = test.focus
+			model = resize(t, model, 120, 28)
+
+			if footer := footerText(model); !strings.Contains(footer, test.wantLabel) {
+				t.Fatalf("footer missing %q: %q", test.wantLabel, footer)
+			}
+			updated, command := model.Update(key("c"))
+			model = updated.(Model)
+
+			if got := clipboardCommandText(t, command); got != test.want {
+				t.Fatalf("clipboard content = %q, want %q", got, test.want)
+			}
+			if model.status != test.wantStatus {
+				t.Fatalf("status = %q, want %q", model.status, test.wantStatus)
+			}
+		})
+	}
+}
+
+func TestCopyDetailBodyFromFooter(t *testing.T) {
+	model := testModel(t)
+	model.rebuildRows("TOKENS")
+	model.focus = focusDetail
+	model = resize(t, model, 120, 28)
+
+	updated, command := model.Update(tea.MouseClickMsg{
+		X:      copyControlX(t, model),
+		Y:      model.height - 1,
+		Button: tea.MouseLeft,
+	})
+	model = updated.(Model)
+
+	if got := clipboardCommandText(t, command); got != "Use rotating refresh tokens." {
+		t.Fatalf("clipboard content = %q", got)
+	}
+	if model.status != "Copied TOKENS body to clipboard" {
+		t.Fatalf("status = %q", model.status)
+	}
+}
+
 func TestCopySelectedIDFooterWorksAcrossViewsAndWidths(t *testing.T) {
 	for _, test := range []struct {
 		name   string
@@ -504,7 +613,7 @@ func copyControlX(t *testing.T, model Model) int {
 	t.Helper()
 	lines := strings.Split(ansi.Strip(model.View().Content), "\n")
 	footer := lines[len(lines)-1]
-	index := strings.Index(footer, "c copy ID")
+	index := strings.Index(footer, "c copy ")
 	if index < 0 {
 		t.Fatalf("copy control not visible in footer:\n%s", ansi.Strip(model.View().Content))
 	}
