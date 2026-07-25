@@ -393,6 +393,27 @@ func (m Model) footerItems() []footerItem {
 }
 
 func (m Model) renderHelp() string {
+	panelWidth := min(64, max(1, m.width))
+	panelHeight := m.helpView.Height() + m.styles.helpPanel.GetVerticalFrameSize()
+	body := m.helpView.View()
+	if m.helpView.TotalLineCount() > m.helpView.Height() {
+		panelHeight++
+		body += "\n" + m.styles.dim.Render(m.helpScrollHint())
+	}
+	panel := m.styles.helpPanel.
+		Width(panelWidth).
+		Height(min(m.contentHeight(), panelHeight)).
+		Render(body)
+	return lipgloss.Place(
+		m.width,
+		m.contentHeight(),
+		lipgloss.Center,
+		lipgloss.Center,
+		panel,
+	)
+}
+
+func (m Model) helpContent() string {
 	help := []string{
 		m.styles.helpTitle.Render("Ergo View keys"),
 		"",
@@ -422,12 +443,16 @@ func (m Model) renderHelp() string {
 		)
 	}
 	help = append(help, "", m.styles.dim.Render("Mouse selection and wheel scrolling are enabled."))
-	panel := m.styles.helpPanel.Render(strings.Join(help, "\n"))
-	return lipgloss.Place(
-		m.width,
-		m.contentHeight(),
-		lipgloss.Center,
-		lipgloss.Center,
-		panel,
-	)
+	return strings.Join(help, "\n")
+}
+
+func (m Model) helpScrollHint() string {
+	switch {
+	case m.helpView.AtTop():
+		return "↓ more below · j/k or wheel scroll"
+	case m.helpView.AtBottom():
+		return "↑ more above · j/k or wheel scroll"
+	default:
+		return "↕ more · j/k or wheel scroll"
+	}
 }

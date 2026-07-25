@@ -92,6 +92,7 @@ type Model struct {
 	agent             string
 	styles            styles
 	detail            viewport.Model
+	helpView          viewport.Model
 	status            string
 	loadErr           error
 	graphFocusID      string
@@ -117,9 +118,14 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
 		),
+		helpView: viewport.New(
+			viewport.WithWidth(40),
+			viewport.WithHeight(10),
+		),
 		graphScope: graphScopeAdaptive,
 	}
 	model.detail.SoftWrap = true
+	model.helpView.SoftWrap = true
 	model.rebuildRows("")
 	model.graphFocusID = model.selectedID()
 	model.syncDetail()
@@ -144,6 +150,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.resizeDetail()
 		m.syncDetail()
+		if m.help {
+			m.syncHelpView(false)
+		}
 		return m, nil
 	case tea.BackgroundColorMsg:
 		m.dark = message.IsDark()
@@ -153,6 +162,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.dialog.applyStyles(m.dark)
 		}
 		m.syncDetail()
+		if m.help {
+			m.syncHelpView(false)
+		}
 		return m, nil
 	case reloadTickMsg:
 		if m.source == nil {
@@ -203,6 +215,11 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, command
 		}
 	case tea.MouseWheelMsg:
+		if m.help {
+			var command tea.Cmd
+			m.helpView, command = m.helpView.Update(message)
+			return m, command
+		}
 		if m.focus == focusDetail {
 			var command tea.Cmd
 			m.detail, command = m.detail.Update(message)
@@ -232,8 +249,11 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 		switch key {
 		case "?", "esc", "q", "enter":
 			m.help = false
+			return nil
 		}
-		return nil
+		var command tea.Cmd
+		m.helpView, command = m.helpView.Update(message)
+		return command
 	}
 	switch key {
 	case "ctrl+c", "q":
@@ -275,6 +295,7 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 		return nil
 	case "?":
 		m.help = true
+		m.syncHelpView(true)
 		return nil
 	case "tab":
 		m.toggleFocus()
@@ -663,6 +684,26 @@ func (m *Model) resizeDetail() {
 	frameHeight := m.styles.pane.GetVerticalFrameSize()
 	m.detail.SetWidth(max(1, detailWidth-frameWidth))
 	m.detail.SetHeight(max(1, m.contentHeight()-frameHeight-1))
+}
+
+func (m *Model) syncHelpView(reset bool) {
+	panelWidth := min(64, max(1, m.width))
+	frameWidth := m.styles.helpPanel.GetHorizontalFrameSize()
+	frameHeight := m.styles.helpPanel.GetVerticalFrameSize()
+	availableHeight := max(1, m.contentHeight()-frameHeight)
+	offset := m.helpView.YOffset()
+
+	m.helpView.SetWidth(max(1, panelWidth-frameWidth))
+	m.helpView.SetHeight(availableHeight)
+	m.helpView.SetContent(m.helpContent())
+	if m.helpView.TotalLineCount() > availableHeight && availableHeight > 1 {
+		m.helpView.SetHeight(availableHeight - 1)
+	}
+	if reset {
+		m.helpView.GotoTop()
+		return
+	}
+	m.helpView.SetYOffset(offset)
 }
 
 func (m Model) paneWidths() (int, int) {
