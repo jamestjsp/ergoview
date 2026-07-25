@@ -93,6 +93,26 @@ func TestSnapshotReturnsIndependentValues(t *testing.T) {
 	}
 }
 
+func TestSnapshotTaskBody(t *testing.T) {
+	root := fixtureRepository(t, "plans.jsonl", "current.jsonl")
+	repository, err := Open(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := repository.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	body, ok := snapshot.TaskBody("TOKENS")
+	if !ok || body != "Use rotating refresh tokens." {
+		t.Fatalf("TaskBody(TOKENS) = %q, %v", body, ok)
+	}
+	if body, ok := snapshot.TaskBody("MISSING"); ok || body != "" {
+		t.Fatalf("TaskBody(MISSING) = %q, %v", body, ok)
+	}
+}
+
 func TestRepositoryUsesLegacyFilenameAndEvents(t *testing.T) {
 	root := fixtureRepository(t, "events.jsonl", "legacy.jsonl")
 	repository, err := Open(filepath.Join(root, ".ergo"))

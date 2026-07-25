@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
@@ -14,10 +13,9 @@ import (
 
 type footerAction int
 
-const (
-	footerActionNone footerAction = iota
-	footerActionCopyID
-)
+const footerActionCopy footerAction = 1
+
+const footerSeparator = "  ·  "
 
 type footerItem struct {
 	content string
@@ -267,12 +265,12 @@ func (m Model) copyFooterItem() footerItem {
 		return footerItem{}
 	}
 	item := m.footerItem("c", target.label)
-	item.action = footerActionCopyID
+	item.action = footerActionCopy
 	return item
 }
 
 func compactFooterItems(items []footerItem) []footerItem {
-	compacted := items[:0]
+	compacted := make([]footerItem, 0, len(items))
 	for _, item := range items {
 		if item.content != "" {
 			compacted = append(compacted, item)
@@ -283,17 +281,21 @@ func compactFooterItems(items []footerItem) []footerItem {
 
 func (m Model) footerPlacements(items []footerItem) []footerPlacement {
 	width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
-	const separator = "  ·  "
 	contentWidth := 0
-	x := m.styles.footer.GetPaddingLeft()
+	x := m.styles.app.GetMarginLeft() +
+		m.styles.app.GetBorderLeftSize() +
+		m.styles.app.GetPaddingLeft() +
+		m.styles.footer.GetMarginLeft() +
+		m.styles.footer.GetBorderLeftSize() +
+		m.styles.footer.GetPaddingLeft()
 	var placements []footerPlacement
 	for _, item := range items {
 		itemWidth := lipgloss.Width(item.content)
 		candidateWidth := itemWidth
 		start := x
 		if len(placements) > 0 {
-			candidateWidth += contentWidth + lipgloss.Width(separator)
-			start += contentWidth + lipgloss.Width(separator)
+			candidateWidth += contentWidth + lipgloss.Width(footerSeparator)
+			start += contentWidth + lipgloss.Width(footerSeparator)
 		}
 		if candidateWidth > width {
 			break
@@ -309,31 +311,17 @@ func (m Model) footerPlacements(items []footerItem) []footerPlacement {
 }
 
 func (m Model) renderFooterItems(items []footerItem) string {
-	const separator = "  ·  "
 	placements := m.footerPlacements(items)
 	contents := make([]string, 0, len(placements))
 	for _, placement := range placements {
 		contents = append(contents, placement.item.content)
 	}
-	content := strings.Join(contents, separator)
+	content := strings.Join(contents, footerSeparator)
 	if content == "" && len(items) > 0 {
 		width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
 		content = ansi.Truncate(items[0].content, width, "…")
 	}
 	return m.styles.footer.Width(m.width).Render(content)
-}
-
-func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
-	if message.Y != m.height-1 {
-		return nil
-	}
-	for _, placement := range m.footerPlacements(m.footerItems()) {
-		if placement.item.action == footerActionCopyID &&
-			message.X >= placement.start && message.X < placement.end {
-			return m.copySelection()
-		}
-	}
-	return nil
 }
 
 func (m Model) footerItems() []footerItem {
