@@ -1,10 +1,11 @@
 package ui
 
 import (
+	"errors"
+	"fmt"
 	"image/color"
 	"os"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -198,7 +199,8 @@ func TestCopySelectedReferenceWithKeyboard(t *testing.T) {
 			model = updated.(Model)
 
 			want := id + "  " + task.Title
-			if got := clipboardCommandText(t, command); got != want {
+			model, got := completeClipboardCommand(t, model, command)
+			if got != want {
 				t.Fatalf("clipboard content = %q, want %q", got, want)
 			}
 			wantStatus := "Copied " + id + " ID and title to clipboard"
@@ -206,6 +208,65 @@ func TestCopySelectedReferenceWithKeyboard(t *testing.T) {
 				t.Fatalf("status = %q, want %q", model.status, wantStatus)
 			}
 		})
+	}
+}
+
+func TestCopyWritesSystemClipboardBeforeReportingSuccess(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.rebuildRows("TOKENS")
+	var written string
+	model.clipboardWriter = func(text string) error {
+		written = text
+		return nil
+	}
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	if model.status != "" {
+		t.Fatalf("status reported success before clipboard write: %q", model.status)
+	}
+	message, ok := command().(clipboardWriteMsg)
+	if !ok {
+		t.Fatalf("clipboard command message type = %T", message)
+	}
+	if written != message.target.text {
+		t.Fatalf("system clipboard received %q, want %q", written, message.target.text)
+	}
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+	if fallback != nil {
+		t.Fatal("successful system clipboard write produced a fallback")
+	}
+	if model.status != "Copied TOKENS ID and title to clipboard" {
+		t.Fatalf("status = %q", model.status)
+	}
+}
+
+func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.rebuildRows("TOKENS")
+	writeErr := errors.New("system clipboard unavailable")
+	model.clipboardWriter = func(string) error { return writeErr }
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	message, ok := command().(clipboardWriteMsg)
+	if !ok {
+		t.Fatalf("clipboard command message type = %T", message)
+	}
+	if !errors.Is(message.err, writeErr) {
+		t.Fatalf("clipboard error = %v, want %v", message.err, writeErr)
+	}
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+	if fallback == nil {
+		t.Fatal("failed system clipboard write did not produce an OSC52 fallback")
+	}
+	if got := fmt.Sprint(fallback()); got != message.target.text {
+		t.Fatalf("OSC52 fallback content = %q, want %q", got, message.target.text)
+	}
+	if model.status != "System clipboard unavailable; tried terminal clipboard" {
+		t.Fatalf("status = %q", model.status)
 	}
 }
 
@@ -292,7 +353,8 @@ func TestCopySelectionMatchesViewAndFocus(t *testing.T) {
 			updated, command := model.Update(key("c"))
 			model = updated.(Model)
 
-			if got := clipboardCommandText(t, command); got != want {
+			model, got := completeClipboardCommand(t, model, command)
+			if got != want {
 				t.Fatalf("clipboard content = %q, want %q", got, want)
 			}
 			if model.status != test.wantStatus {
@@ -308,7 +370,8 @@ func TestCopyDetailFromFooterMatchesKeyboard(t *testing.T) {
 	model.focus = focusDetail
 	model = resize(t, model, 120, 28)
 
-	_, keyboardCommand := model.Update(key("c"))
+	keyboardUpdated, keyboardCommand := model.Update(key("c"))
+	keyboardModel := keyboardUpdated.(Model)
 	updated, command := model.Update(tea.MouseClickMsg{
 		X:      copyControlX(t, model),
 		Y:      model.height - 1,
@@ -316,9 +379,10 @@ func TestCopyDetailFromFooterMatchesKeyboard(t *testing.T) {
 	})
 	model = updated.(Model)
 
-	keyboardText := clipboardCommandText(t, keyboardCommand)
-	if got := clipboardCommandText(t, command); got != keyboardText {
-		t.Fatalf("footer clipboard content differs from keyboard:\nfooter: %q\nkeyboard: %q", got, keyboardText)
+	_, keyboardText := completeClipboardCommand(t, keyboardModel, keyboardCommand)
+	model, footerText := completeClipboardCommand(t, model, command)
+	if footerText != keyboardText {
+		t.Fatalf("footer clipboard content differs from keyboard:\nfooter: %q\nkeyboard: %q", footerText, keyboardText)
 	}
 	if model.status != "Copied TOKENS detail to clipboard" {
 		t.Fatalf("status = %q", model.status)
@@ -354,7 +418,8 @@ func TestCopySelectedIDFooterWorksAcrossViewsAndWidths(t *testing.T) {
 				t.Fatal("task TOKENS not found")
 			}
 			want := taskReference(task)
-			if got := clipboardCommandText(t, command); got != want {
+			model, got := completeClipboardCommand(t, model, command)
+			if got != want {
 				t.Fatalf("clipboard content = %q, want %q", got, want)
 			}
 			if model.status != "Copied TOKENS ID and title to clipboard" {
@@ -497,7 +562,8 @@ func TestCopyFooterHitBoundsAreHalfOpen(t *testing.T) {
 		Button: tea.MouseLeft,
 	})
 	model = updated.(Model)
-	if got := clipboardCommandText(t, command); !strings.HasPrefix(got, "TOKENS") {
+	model, got := completeClipboardCommand(t, model, command)
+	if !strings.HasPrefix(got, "TOKENS") {
 		t.Fatalf("start-bound clipboard content = %q, want a TOKENS reference", got)
 	}
 
@@ -681,7 +747,9 @@ func (source *stubSnapshotSource) LoadIfChanged() (ergo.Snapshot, bool, error) {
 
 func testModel(t *testing.T) Model {
 	t.Helper()
-	return New(testSnapshot(t), Options{})
+	model := New(testSnapshot(t), Options{})
+	model.clipboardWriter = func(string) error { return nil }
+	return model
 }
 
 func testSnapshot(t *testing.T) ergo.Snapshot {
@@ -734,17 +802,23 @@ func key(value string) tea.KeyPressMsg {
 	}
 }
 
-func clipboardCommandText(t *testing.T, command tea.Cmd) string {
+func completeClipboardCommand(t *testing.T, model Model, command tea.Cmd) (Model, string) {
 	t.Helper()
 	if command == nil {
 		t.Fatal("clipboard command is nil")
 	}
-	message := command()
-	value := reflect.ValueOf(message)
-	if value.Kind() != reflect.String {
+	message, ok := command().(clipboardWriteMsg)
+	if !ok {
 		t.Fatalf("clipboard command message type = %T", message)
 	}
-	return value.String()
+	if message.err != nil {
+		t.Fatalf("clipboard command failed: %v", message.err)
+	}
+	updated, fallback := model.Update(message)
+	if fallback != nil {
+		t.Fatal("successful clipboard write produced a fallback command")
+	}
+	return updated.(Model), message.target.text
 }
 
 func copyControlX(t *testing.T, model Model) int {
