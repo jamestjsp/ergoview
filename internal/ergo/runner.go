@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 )
@@ -81,7 +82,7 @@ func (r *Runner) Run(ctx context.Context, input io.Reader, args ...string) (stri
 
 func (binary *binaryPath) resolve() (string, error) {
 	binary.once.Do(func() {
-		if strings.ContainsAny(binary.name, `/\`) {
+		if filepath.Base(binary.name) != binary.name {
 			binary.path = binary.name
 			return
 		}

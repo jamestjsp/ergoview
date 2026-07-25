@@ -7,7 +7,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -102,19 +104,51 @@ func TestRunnerCachesBinaryLookupError(t *testing.T) {
 }
 
 func TestRunnerExplicitBinaryPathSkipsLookup(t *testing.T) {
-	runner := NewRunner("./tools/ergo", "/project", "")
+	explicitPath := filepath.Join("tools", "ergo")
+	runner := NewRunner(explicitPath, "/project", "")
 	runner.binary.lookPath = func(string) (string, error) {
 		t.Fatal("explicit binary path used LookPath")
 		return "", nil
 	}
 	runner.build = func(ctx context.Context, binary string, args ...string) *exec.Cmd {
-		if binary != "./tools/ergo" {
-			t.Fatalf("binary = %q, want ./tools/ergo", binary)
+		if binary != explicitPath {
+			t.Fatalf("binary = %q, want %q", binary, explicitPath)
 		}
 		return helperCommand(ctx, binary, args...)
 	}
 	if _, err := runner.Run(context.Background(), nil, "list"); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestRunnerUsesPlatformPathSeparators(t *testing.T) {
+	const name = `team\ergo`
+	runner := NewRunner(name, "/project", "")
+	lookups := 0
+	runner.binary.lookPath = func(value string) (string, error) {
+		lookups++
+		if value != name {
+			t.Fatalf("lookup name = %q, want %q", value, name)
+		}
+		return os.Args[0], nil
+	}
+	resolved := ""
+	runner.build = func(ctx context.Context, binary string, args ...string) *exec.Cmd {
+		resolved = binary
+		return helperCommand(ctx, binary, args...)
+	}
+	if _, err := runner.Run(context.Background(), nil, "list"); err != nil {
+		t.Fatal(err)
+	}
+
+	if runtime.GOOS == "windows" {
+		if lookups != 0 || resolved != name {
+			t.Fatalf("Windows lookup count = %d, resolved = %q", lookups, resolved)
+		}
+		return
+	}
+	if lookups != 1 || resolved != os.Args[0] {
+		t.Fatalf("Unix lookup count = %d, resolved = %q", lookups, resolved)
 	}
 }
 
