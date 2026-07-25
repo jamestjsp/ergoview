@@ -42,6 +42,8 @@ Ergo View walks upward from the starting path to find `.ergo`. It reads the curr
 
 All views share selection, fuzzy search, state filtering, and container focus. Ergo View reloads external changes once per second without losing the selected task.
 
+Press `c` or click `copy ID` in the footer to copy the selected task or container ID to the system clipboard.
+
 In the dependency graph, use the arrow keys or `h`/`j`/`k`/`l` to move spatially between cards. `Enter` makes the selected card the exploration focus, `Esc` returns to the previous focus, and `d` cycles direct, adaptive, and full-lineage depth. The adaptive default spends the available terminal cells on the nearest upstream and downstream context; selecting an overflow card reveals more. Mouse clicks select cards directly.
 
 ## Interact
@@ -74,6 +76,7 @@ Ergo View never edits the event log. It invokes the official Ergo CLI for every 
 | `tab` / `enter` (overview) | Switch or focus overview panes |
 | `enter` / `esc` (graph) | Focus graph node / return to previous graph focus |
 | `d` | Cycle direct / adaptive / lineage graph depth |
+| `c` | Copy the selected task or container ID |
 | `a` | Open selected task actions |
 | `n` / `p` | New task / container plan |
 | `?` | Toggle complete in-app help |

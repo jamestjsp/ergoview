@@ -194,7 +194,9 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, command
 		}
 	case tea.MouseClickMsg:
-		m.updateMouseClick(message)
+		if command := m.updateMouseClick(message); command != nil {
+			return m, command
+		}
 	case tea.MouseWheelMsg:
 		if m.focus == focusDetail {
 			var command tea.Cmd
@@ -242,6 +244,8 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 			m.actionMenu = true
 		}
 		return nil
+	case "c":
+		return m.copySelectedID()
 	case "/":
 		m.searching = true
 		m.search.Focus()
@@ -321,35 +325,48 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 	return command
 }
 
-func (m *Model) updateMouseClick(message tea.MouseClickMsg) {
+func (m *Model) updateMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	if message.Button != tea.MouseLeft || m.help {
-		return
+		return nil
+	}
+	if command := m.updateFooterMouseClick(message); command != nil {
+		return command
 	}
 	if m.view == viewDependencies {
 		m.updateGraphMouseClick(message)
-		return
+		return nil
 	}
 	if m.view != viewOverview {
-		return
+		return nil
 	}
 	contentY := message.Y - 2
 	if contentY < 1 {
-		return
+		return nil
 	}
 	rowIndex := contentY - 1
 	if m.width >= narrowBreakpoint {
 		outlineWidth, _ := m.paneWidths()
 		if message.X >= outlineWidth {
 			m.focus = focusDetail
-			return
+			return nil
 		}
 		m.focus = focusOutline
 	} else if m.focus == focusDetail {
-		return
+		return nil
 	}
 	if rowIndex >= 0 && rowIndex < len(m.rows) {
 		m.selectIndex(rowIndex)
 	}
+	return nil
+}
+
+func (m *Model) copySelectedID() tea.Cmd {
+	task, ok := m.selectedTask()
+	if !ok {
+		return nil
+	}
+	m.status = "Copied " + task.ID + " to clipboard"
+	return tea.SetClipboard(task.ID)
 }
 
 func (m *Model) toggleFocus() {

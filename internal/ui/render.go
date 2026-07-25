@@ -5,11 +5,29 @@ import (
 	"path/filepath"
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jamestjsp/ergoview/internal/ergo"
 )
+
+type footerAction int
+
+const (
+	footerActionNone footerAction = iota
+	footerActionCopyID
+)
+
+type footerItem struct {
+	content string
+	action  footerAction
+}
+
+type footerPlacement struct {
+	item       footerItem
+	start, end int
+}
 
 func (m Model) viewContent() string {
 	if m.width <= 0 || m.height <= 0 {
@@ -229,76 +247,141 @@ func (m Model) renderDetailPane(width int) string {
 }
 
 func (m Model) renderFooter() string {
+	return m.renderFooterItems(m.footerItems())
+}
+
+func (m Model) footerItem(key, label string) footerItem {
+	return footerItem{content: m.styles.footerKey.Render(key) + " " + label}
+}
+
+func (m Model) copyIDFooterItem() footerItem {
+	if _, ok := m.selectedTask(); !ok {
+		return footerItem{}
+	}
+	item := m.footerItem("c", "copy ID")
+	item.action = footerActionCopyID
+	return item
+}
+
+func compactFooterItems(items []footerItem) []footerItem {
+	compacted := items[:0]
+	for _, item := range items {
+		if item.content != "" {
+			compacted = append(compacted, item)
+		}
+	}
+	return compacted
+}
+
+func (m Model) footerPlacements(items []footerItem) []footerPlacement {
+	width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
+	const separator = "  ·  "
+	contentWidth := 0
+	x := m.styles.footer.GetPaddingLeft()
+	var placements []footerPlacement
+	for _, item := range items {
+		itemWidth := lipgloss.Width(item.content)
+		candidateWidth := itemWidth
+		start := x
+		if len(placements) > 0 {
+			candidateWidth += contentWidth + lipgloss.Width(separator)
+			start += contentWidth + lipgloss.Width(separator)
+		}
+		if candidateWidth > width {
+			break
+		}
+		placements = append(placements, footerPlacement{
+			item:  item,
+			start: start,
+			end:   start + itemWidth,
+		})
+		contentWidth = candidateWidth
+	}
+	return placements
+}
+
+func (m Model) renderFooterItems(items []footerItem) string {
+	const separator = "  ·  "
+	placements := m.footerPlacements(items)
+	contents := make([]string, 0, len(placements))
+	for _, placement := range placements {
+		contents = append(contents, placement.item.content)
+	}
+	content := strings.Join(contents, separator)
+	if content == "" && len(items) > 0 {
+		width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
+		content = ansi.Truncate(items[0].content, width, "…")
+	}
+	return m.styles.footer.Width(m.width).Render(content)
+}
+
+func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
+	if message.Y != m.height-1 || m.dialog != nil || m.actionMenu || m.searching {
+		return nil
+	}
+	for _, placement := range m.footerPlacements(m.footerItems()) {
+		if placement.item.action == footerActionCopyID &&
+			message.X >= placement.start && message.X < placement.end {
+			return m.copySelectedID()
+		}
+	}
+	return nil
+}
+
+func (m Model) footerItems() []footerItem {
 	if m.view == viewDependencies {
-		items := []string{
-			m.styles.footerKey.Render("h/j/k/l") + " node",
-			m.styles.footerKey.Render("enter") + " focus",
-			m.styles.footerKey.Render("esc") + " back",
-			m.styles.footerKey.Render("d") + " depth",
-			m.styles.footerKey.Render("a") + " actions",
-			m.styles.footerKey.Render("?") + " help",
+		items := []footerItem{
+			m.footerItem("h/j/k/l", "node"),
+			m.copyIDFooterItem(),
+			m.footerItem("enter", "focus"),
+			m.footerItem("esc", "back"),
+			m.footerItem("d", "depth"),
+			m.footerItem("a", "actions"),
+			m.footerItem("?", "help"),
 		}
 		if m.width >= narrowBreakpoint {
 			items = append(items,
-				m.styles.footerKey.Render("/")+" search",
-				m.styles.footerKey.Render("1/2/3")+" views",
-				m.styles.footerKey.Render("q")+" quit",
+				m.footerItem("/", "search"),
+				m.footerItem("1/2/3", "views"),
+				m.footerItem("q", "quit"),
 			)
 		}
-		return m.renderFooterItems(items)
+		return compactFooterItems(items)
 	}
 	if m.width < narrowBreakpoint {
-		items := []string{
-			m.styles.footerKey.Render("j/k") + " move",
-			m.styles.footerKey.Render("1/2/3") + " views",
-			m.styles.footerKey.Render("a") + " actions",
-			m.styles.footerKey.Render("n") + " new",
-			m.styles.footerKey.Render("/") + " search",
-			m.styles.footerKey.Render("?") + " help",
-		}
-		return m.renderFooterItems(items)
+		return compactFooterItems([]footerItem{
+			m.footerItem("j/k", "move"),
+			m.copyIDFooterItem(),
+			m.footerItem("1/2/3", "views"),
+			m.footerItem("a", "actions"),
+			m.footerItem("n", "new"),
+			m.footerItem("/", "search"),
+			m.footerItem("?", "help"),
+		})
 	}
-	items := []string{
-		m.styles.footerKey.Render("j/k") + " move",
-		m.styles.footerKey.Render("a") + " actions",
-		m.styles.footerKey.Render("n/p") + " new",
-		m.styles.footerKey.Render("1/2/3") + " views",
-		m.styles.footerKey.Render("/") + " search",
-		m.styles.footerKey.Render("f") + " filter",
-		m.styles.footerKey.Render("e") + " epic",
-		m.styles.footerKey.Render("x") + " clear",
-		m.styles.footerKey.Render("?") + " help",
-		m.styles.footerKey.Render("q") + " quit",
+	items := []footerItem{
+		m.footerItem("j/k", "move"),
+		m.copyIDFooterItem(),
+		m.footerItem("a", "actions"),
+		m.footerItem("n/p", "new"),
+		m.footerItem("1/2/3", "views"),
+		m.footerItem("/", "search"),
+		m.footerItem("f", "filter"),
+		m.footerItem("e", "epic"),
+		m.footerItem("x", "clear"),
+		m.footerItem("?", "help"),
+		m.footerItem("q", "quit"),
 	}
 	if m.view == viewOverview {
-		items = append(items[:1], append([]string{
-			m.styles.footerKey.Render("tab") + " pane",
-			m.styles.footerKey.Render("enter") + " detail",
+		items = append(items[:1], append([]footerItem{
+			m.footerItem("tab", "pane"),
+			m.footerItem("enter", "detail"),
 		}, items[1:]...)...)
 		if m.focus == focusDetail {
-			items[0] = m.styles.footerKey.Render("j/k") + " scroll"
+			items[0] = m.footerItem("j/k", "scroll")
 		}
 	}
-	return m.renderFooterItems(items)
-}
-
-func (m Model) renderFooterItems(items []string) string {
-	width := max(1, m.width-m.styles.footer.GetHorizontalFrameSize())
-	var content string
-	for _, item := range items {
-		candidate := item
-		if content != "" {
-			candidate = content + "  ·  " + item
-		}
-		if lipgloss.Width(candidate) > width {
-			break
-		}
-		content = candidate
-	}
-	if content == "" && len(items) > 0 {
-		content = ansi.Truncate(items[0], width, "…")
-	}
-	return m.styles.footer.Width(m.width).Render(content)
+	return compactFooterItems(items)
 }
 
 func (m Model) renderHelp() string {
@@ -313,6 +396,7 @@ func (m Model) renderHelp() string {
 		m.styles.helpKey.Render("f") + "              cycle state filter",
 		m.styles.helpKey.Render("e") + "              focus selected container",
 		m.styles.helpKey.Render("x") + "              clear search and filters",
+		m.styles.helpKey.Render("c") + "              copy selected task or container ID",
 		m.styles.helpKey.Render("a") + "              selected task actions",
 		m.styles.helpKey.Render("n / p") + "          new task / container plan",
 		m.styles.helpKey.Render("tab") + "            switch pane",
