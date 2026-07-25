@@ -179,6 +179,27 @@ func TestCopyFooterDoesNotBypassActionMenu(t *testing.T) {
 	}
 }
 
+func TestCopyFooterDoesNotBypassDialog(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.rebuildRows("TOKENS")
+	copyX := copyControlX(t, model)
+	model.openDialog(actionRename)
+
+	updated, command := model.Update(tea.MouseClickMsg{
+		X:      copyX,
+		Y:      model.height - 1,
+		Button: tea.MouseLeft,
+	})
+	model = updated.(Model)
+
+	if command != nil {
+		t.Fatal("dialog footer click produced a clipboard command")
+	}
+	if strings.Contains(model.status, "Copied") {
+		t.Fatalf("copy status set behind dialog: %q", model.status)
+	}
+}
+
 func TestFooterRowClaimsEveryMouseClick(t *testing.T) {
 	for _, test := range []struct {
 		name   string

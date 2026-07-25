@@ -119,3 +119,8 @@
 {"type":"link","ts":"2026-07-25T20:23:33.913061Z","data":{"from_id":"BM53WE","to_id":"LJJP2Q","type":"depends"}}
 {"type":"claim","ts":"2026-07-25T20:27:32.502731Z","data":{"id":"T4EEXP","agent_id":"codex@desktop","ts":"2026-07-25T20:27:32.502731Z"}}
 {"type":"state","ts":"2026-07-25T20:27:32.502731Z","data":{"id":"T4EEXP","state":"doing","ts":"2026-07-25T20:27:32.502731Z"}}
+{"type":"message","ts":"2026-07-25T20:29:11.323248Z","data":{"task_id":"T4EEXP","kind":"done","text":"Fixed footer-row click ownership and stale mouse status; added regressions for all views and half-open hit bounds; verified with race tests, vet, and gofmt.","ts":"2026-07-25T20:29:11.323248Z"}}
+{"type":"unclaim","ts":"2026-07-25T20:29:11.323248Z","data":{"id":"T4EEXP","ts":"2026-07-25T20:29:11.323248Z"}}
+{"type":"state","ts":"2026-07-25T20:29:11.323248Z","data":{"id":"T4EEXP","state":"done","ts":"2026-07-25T20:29:11.323248Z"}}
+{"type":"claim","ts":"2026-07-25T20:29:16.824607Z","data":{"id":"PNYOCY","agent_id":"codex@desktop","ts":"2026-07-25T20:29:16.824607Z"}}
+{"type":"state","ts":"2026-07-25T20:29:16.824607Z","data":{"id":"PNYOCY","state":"doing","ts":"2026-07-25T20:29:16.824607Z"}}

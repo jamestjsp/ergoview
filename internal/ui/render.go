@@ -255,6 +255,9 @@ func (m Model) footerItem(key, label string) footerItem {
 }
 
 func (m Model) copyIDFooterItem() footerItem {
+	if m.dialog != nil || m.actionMenu || m.searching {
+		return footerItem{}
+	}
 	if _, ok := m.selectedTask(); !ok {
 		return footerItem{}
 	}
@@ -316,7 +319,7 @@ func (m Model) renderFooterItems(items []footerItem) string {
 }
 
 func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
-	if message.Y != m.height-1 || m.dialog != nil || m.actionMenu || m.searching {
+	if message.Y != m.height-1 {
 		return nil
 	}
 	for _, placement := range m.footerPlacements(m.footerItems()) {
@@ -332,16 +335,20 @@ func (m Model) footerItems() []footerItem {
 	if m.view == viewDependencies {
 		items := []footerItem{
 			m.footerItem("h/j/k/l", "node"),
-			m.copyIDFooterItem(),
 			m.footerItem("enter", "focus"),
 			m.footerItem("esc", "back"),
 			m.footerItem("d", "depth"),
-			m.footerItem("a", "actions"),
-			m.footerItem("?", "help"),
 		}
 		if m.width >= narrowBreakpoint {
+			items = append(items, m.footerItem("/", "search"))
+		}
+		items = append(items,
+			m.footerItem("a", "actions"),
+			m.copyIDFooterItem(),
+			m.footerItem("?", "help"),
+		)
+		if m.width >= narrowBreakpoint {
 			items = append(items,
-				m.footerItem("/", "search"),
 				m.footerItem("1/2/3", "views"),
 				m.footerItem("q", "quit"),
 			)
@@ -351,24 +358,24 @@ func (m Model) footerItems() []footerItem {
 	if m.width < narrowBreakpoint {
 		return compactFooterItems([]footerItem{
 			m.footerItem("j/k", "move"),
-			m.copyIDFooterItem(),
 			m.footerItem("1/2/3", "views"),
-			m.footerItem("a", "actions"),
-			m.footerItem("n", "new"),
 			m.footerItem("/", "search"),
+			m.footerItem("a", "actions"),
+			m.copyIDFooterItem(),
+			m.footerItem("n", "new"),
 			m.footerItem("?", "help"),
 		})
 	}
 	items := []footerItem{
 		m.footerItem("j/k", "move"),
-		m.copyIDFooterItem(),
+		m.footerItem("x", "clear"),
 		m.footerItem("a", "actions"),
+		m.copyIDFooterItem(),
 		m.footerItem("n/p", "new"),
 		m.footerItem("1/2/3", "views"),
 		m.footerItem("/", "search"),
 		m.footerItem("f", "filter"),
 		m.footerItem("e", "epic"),
-		m.footerItem("x", "clear"),
 		m.footerItem("?", "help"),
 		m.footerItem("q", "quit"),
 	}
