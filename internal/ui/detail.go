@@ -96,6 +96,80 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 	return strings.TrimSpace(content.String())
 }
 
+func (m Model) taskDetailMarkdown(task ergo.Task) string {
+	sections := []string{
+		fmt.Sprintf("**%s**  `%s`\n\n# %s", m.taskDetailState(task), task.ID, task.Title),
+	}
+	if task.ClaimedBy != "" {
+		sections = append(sections, "claimed by "+task.ClaimedBy)
+	}
+	if task.ParentID != "" {
+		sections = append(sections, "container  "+m.plainTaskLabel(task.ParentID))
+	}
+	if len(task.Dependencies) > 0 {
+		var lines strings.Builder
+		lines.WriteString("## Depends on")
+		for _, id := range task.Dependencies {
+			lines.WriteString("\n- ← ")
+			lines.WriteString(m.plainTaskLabel(id))
+		}
+		sections = append(sections, lines.String())
+	}
+	if len(task.Dependents) > 0 {
+		var lines strings.Builder
+		lines.WriteString("## Unlocks")
+		for _, id := range task.Dependents {
+			lines.WriteString("\n- → ")
+			lines.WriteString(m.plainTaskLabel(id))
+		}
+		sections = append(sections, lines.String())
+	}
+	if task.Container {
+		done, total := completedChildren(m.snapshot, task), len(task.Children)
+		sections = append(sections, fmt.Sprintf(
+			"## Progress\n\n%d of %d children complete",
+			done,
+			total,
+		))
+	}
+	if strings.TrimSpace(task.Body) != "" {
+		sections = append(sections, "## Description\n\n"+task.Body)
+	}
+	if len(task.Messages) > 0 {
+		var lines strings.Builder
+		lines.WriteString("## Activity")
+		for _, message := range task.Messages {
+			fmt.Fprintf(&lines, "\n- **%s**  %s", strings.ToUpper(message.Kind), message.Text)
+		}
+		sections = append(sections, lines.String())
+	}
+	if len(task.Results) > 0 {
+		var lines strings.Builder
+		lines.WriteString("## Results")
+		for _, result := range task.Results {
+			lines.WriteString("\n- ↗ ")
+			if result.Summary != "" && result.Summary != result.Path {
+				lines.WriteString(result.Summary)
+				lines.WriteString("  ")
+			}
+			lines.WriteString(result.Path)
+		}
+		sections = append(sections, lines.String())
+	}
+	return strings.Join(sections, "\n\n")
+}
+
+func (m Model) taskDetailState(task ergo.Task) string {
+	if task.Container {
+		if task.Complete {
+			return "DONE"
+		}
+		return "IN PROGRESS"
+	}
+	_, label, _ := m.taskPresentation(task)
+	return label
+}
+
 func (m Model) messageKindStyle(kind string) lipgloss.Style {
 	switch kind {
 	case "done":
@@ -119,6 +193,14 @@ func (m Model) taskLabel(id string) string {
 		return id
 	}
 	return task.Title + "  " + m.styles.metadata.Render(id)
+}
+
+func (m Model) plainTaskLabel(id string) string {
+	task, ok := m.snapshot.Task(id)
+	if !ok {
+		return id
+	}
+	return task.Title + "  " + task.ID
 }
 
 func (m Model) renderMarkdown(markdown string, width int) string {

@@ -29,4 +29,4 @@
 │                                                        ││   • Reload the selected task after every mutation.                             │
 │                                                        ││                                                                                │
 ╰────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
- j/k scroll  ·  tab pane  ·  enter detail  ·  x clear  ·  a actions  ·  c copy body  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter
+ j/k scroll  ·  tab pane  ·  enter detail  ·  x clear  ·  a actions  ·  c copy detail  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter

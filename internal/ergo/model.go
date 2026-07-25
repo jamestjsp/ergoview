@@ -89,15 +89,6 @@ func (s Snapshot) Task(id string) (Task, bool) {
 	return cloneTask(s.tasks[index]), true
 }
 
-// TaskBody returns a task's body without cloning the task's collection fields.
-func (s Snapshot) TaskBody(id string) (string, bool) {
-	index, ok := s.byID[id]
-	if !ok || index < 0 || index >= len(s.tasks) {
-		return "", false
-	}
-	return s.tasks[index].Body, true
-}
-
 func (s Snapshot) ChildrenOf(id string) []Task {
 	task, ok := s.Task(id)
 	if !ok {

@@ -260,11 +260,11 @@ func (m Model) copyFooterItem() footerItem {
 	if m.dialog != nil || m.actionMenu || m.searching {
 		return footerItem{}
 	}
-	target, ok := m.selectedCopyTarget()
+	label, ok := m.copyTargetLabel()
 	if !ok {
 		return footerItem{}
 	}
-	item := m.footerItem("c", target.label)
+	item := m.footerItem("c", label)
 	item.action = footerActionCopy
 	return item
 }
@@ -417,7 +417,7 @@ func (m Model) helpContent() string {
 		m.styles.helpKey.Render("f") + "              cycle state filter",
 		m.styles.helpKey.Render("e") + "              focus selected container",
 		m.styles.helpKey.Render("x") + "              clear search and filters",
-		m.styles.helpKey.Render("c") + "              copy selected ID or focused detail body",
+		m.styles.helpKey.Render("c") + "              copy selected ID or focused detail",
 		m.styles.helpKey.Render("a") + "              selected task actions",
 		m.styles.helpKey.Render("n / p") + "          new task / container plan",
 		m.styles.helpKey.Render("tab") + "            switch pane",

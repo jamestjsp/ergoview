@@ -410,22 +410,40 @@ func (m *Model) copySelection() tea.Cmd {
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
 	id := m.selectedID()
-	body, ok := m.snapshot.TaskBody(id)
+	label, ok := m.copyTargetLabel()
 	if !ok {
 		return copyTarget{}, false
 	}
-	if m.view == viewOverview && m.focus == focusDetail && strings.TrimSpace(body) != "" {
+	if m.copiesDetail() {
+		task, ok := m.snapshot.Task(id)
+		if !ok {
+			return copyTarget{}, false
+		}
 		return copyTarget{
-			text:   body,
-			label:  "copy body",
-			status: "Copied " + id + " body to clipboard",
+			text:   m.taskDetailMarkdown(task),
+			label:  label,
+			status: "Copied " + id + " detail to clipboard",
 		}, true
 	}
 	return copyTarget{
 		text:   id,
-		label:  "copy ID",
+		label:  label,
 		status: "Copied " + id + " to clipboard",
 	}, true
+}
+
+func (m Model) copyTargetLabel() (string, bool) {
+	if m.selectedID() == "" {
+		return "", false
+	}
+	if m.copiesDetail() {
+		return "copy detail", true
+	}
+	return "copy ID", true
+}
+
+func (m Model) copiesDetail() bool {
+	return m.view == viewOverview && m.focus == focusDetail && m.selectedID() != ""
 }
 
 func (m *Model) toggleFocus() {
