@@ -17,6 +17,8 @@ import (
 
 const maxEventLineBytes = 10 * 1024 * 1024
 
+var errEventLineTooLong = errors.New("event line too long")
+
 type Repository struct {
 	root      string
 	ergoDir   string
@@ -133,8 +135,8 @@ func readEventRange(file *os.File, path string, offset, size int64, lines int) (
 
 	for {
 		lineStart := committedOffset
-		data, err := reader.ReadBytes('\n')
-		if len(data) > maxEventLineBytes+1 {
+		data, err := readBoundedLine(reader, maxEventLineBytes)
+		if errors.Is(err, errEventLineTooLong) {
 			return nil, offset, lines, false, fmt.Errorf("%s: event line exceeds %d bytes", path, maxEventLineBytes)
 		}
 		if len(data) == 0 && errors.Is(err, io.EOF) {
@@ -162,6 +164,25 @@ func readEventRange(file *os.File, path string, offset, size int64, lines int) (
 			return events, committedOffset, committedLines, true, nil
 		}
 		return nil, offset, lines, false, err
+	}
+}
+
+func readBoundedLine(reader *bufio.Reader, limit int) ([]byte, error) {
+	var line []byte
+	for {
+		fragment, err := reader.ReadSlice('\n')
+		contentBytes := len(line) + len(fragment)
+		if err == nil && len(fragment) > 0 && fragment[len(fragment)-1] == '\n' {
+			contentBytes--
+		}
+		if contentBytes > limit {
+			return nil, errEventLineTooLong
+		}
+		line = append(line, fragment...)
+		if errors.Is(err, bufio.ErrBufferFull) {
+			continue
+		}
+		return line, err
 	}
 }
 

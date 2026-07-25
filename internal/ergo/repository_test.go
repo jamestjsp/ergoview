@@ -1,8 +1,10 @@
 package ergo
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -166,6 +168,30 @@ func TestRepositoryReportsMalformedCompleteRecord(t *testing.T) {
 	_, err = repository.Load()
 	if err == nil || !strings.Contains(err.Error(), "plans.jsonl:15: invalid JSON") {
 		t.Fatalf("error = %v", err)
+	}
+}
+
+func TestReadBoundedLineStopsAtLimit(t *testing.T) {
+	const (
+		limit      = 128
+		bufferSize = 32
+	)
+	source := &countingFillReader{}
+	reader := bufio.NewReaderSize(source, bufferSize)
+	if _, err := readBoundedLine(reader, limit); !errors.Is(err, errEventLineTooLong) {
+		t.Fatalf("error = %v, want event-line limit", err)
+	}
+	if source.bytesRead > limit+bufferSize {
+		t.Fatalf("reader consumed %d bytes past a %d-byte limit", source.bytesRead, limit)
+	}
+
+	terminated := append(bytes.Repeat([]byte("x"), limit), '\n')
+	line, err := readBoundedLine(bufio.NewReaderSize(bytes.NewReader(terminated), bufferSize), limit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(line, terminated) {
+		t.Fatalf("line length = %d, want %d", len(line), len(terminated))
 	}
 }
 
@@ -396,6 +422,18 @@ func mustJSON(t *testing.T, value any) json.RawMessage {
 		t.Fatal(err)
 	}
 	return data
+}
+
+type countingFillReader struct {
+	bytesRead int
+}
+
+func (reader *countingFillReader) Read(data []byte) (int, error) {
+	for index := range data {
+		data[index] = 'x'
+	}
+	reader.bytesRead += len(data)
+	return len(data), nil
 }
 
 func fixtureRepository(t *testing.T, destination, fixture string) string {
