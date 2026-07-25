@@ -414,11 +414,11 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 	if !ok {
 		return copyTarget{}, false
 	}
+	task, ok := m.snapshot.Task(id)
+	if !ok {
+		return copyTarget{}, false
+	}
 	if m.copiesDetail() {
-		task, ok := m.snapshot.Task(id)
-		if !ok {
-			return copyTarget{}, false
-		}
 		return copyTarget{
 			text:   m.taskDetailMarkdown(task),
 			label:  label,
@@ -426,10 +426,19 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 		}, true
 	}
 	return copyTarget{
-		text:   id,
+		text:   taskReference(task),
 		label:  label,
-		status: "Copied " + id + " to clipboard",
+		status: "Copied " + id + " ID and title to clipboard",
 	}, true
+}
+
+// taskReference is the outline payload: the ID a caller pastes into a command,
+// followed by the title that makes it readable.
+func taskReference(task ergo.Task) string {
+	if task.Title == "" {
+		return task.ID
+	}
+	return task.ID + "  " + task.Title
 }
 
 func (m Model) copyTargetLabel() (string, bool) {
@@ -439,7 +448,7 @@ func (m Model) copyTargetLabel() (string, bool) {
 	if m.copiesDetail() {
 		return "copy detail", true
 	}
-	return "copy ID", true
+	return "copy ref", true
 }
 
 func (m Model) copiesDetail() bool {

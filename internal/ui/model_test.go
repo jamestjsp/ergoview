@@ -184,19 +184,24 @@ func TestHelpCloseKeysAndClicksStayModal(t *testing.T) {
 	}
 }
 
-func TestCopySelectedIDWithKeyboard(t *testing.T) {
+func TestCopySelectedReferenceWithKeyboard(t *testing.T) {
 	for _, id := range []string{"TOKENS", "EPIC01"} {
 		t.Run(id, func(t *testing.T) {
 			model := resize(t, testModel(t), 120, 28)
 			model.rebuildRows(id)
 
+			task, ok := model.snapshot.Task(id)
+			if !ok {
+				t.Fatalf("task %s not found", id)
+			}
 			updated, command := model.Update(key("c"))
 			model = updated.(Model)
 
-			if got := clipboardCommandText(t, command); got != id {
-				t.Fatalf("clipboard content = %q, want %s", got, id)
+			want := id + "  " + task.Title
+			if got := clipboardCommandText(t, command); got != want {
+				t.Fatalf("clipboard content = %q, want %q", got, want)
 			}
-			wantStatus := "Copied " + id + " to clipboard"
+			wantStatus := "Copied " + id + " ID and title to clipboard"
 			if model.status != wantStatus {
 				t.Fatalf("status = %q, want %q", model.status, wantStatus)
 			}
@@ -210,19 +215,17 @@ func TestCopySelectionMatchesViewAndFocus(t *testing.T) {
 		id         string
 		view       viewMode
 		focus      focus
-		want       string
 		wantDetail bool
 		wantLabel  string
 		wantStatus string
 	}{
 		{
-			name:       "overview outline copies task ID",
+			name:       "overview outline copies ID and title",
 			id:         "TOKENS",
 			view:       viewOverview,
 			focus:      focusOutline,
-			want:       "TOKENS",
-			wantLabel:  "copy ID",
-			wantStatus: "Copied TOKENS to clipboard",
+			wantLabel:  "copy ref",
+			wantStatus: "Copied TOKENS ID and title to clipboard",
 		},
 		{
 			name:       "overview detail copies whole detail",
@@ -247,18 +250,16 @@ func TestCopySelectionMatchesViewAndFocus(t *testing.T) {
 			id:         "TOKENS",
 			view:       viewBoard,
 			focus:      focusDetail,
-			want:       "TOKENS",
-			wantLabel:  "copy ID",
-			wantStatus: "Copied TOKENS to clipboard",
+			wantLabel:  "copy ref",
+			wantStatus: "Copied TOKENS ID and title to clipboard",
 		},
 		{
 			name:       "dependencies ignore stale detail focus",
 			id:         "TOKENS",
 			view:       viewDependencies,
 			focus:      focusDetail,
-			want:       "TOKENS",
-			wantLabel:  "copy ID",
-			wantStatus: "Copied TOKENS to clipboard",
+			wantLabel:  "copy ref",
+			wantStatus: "Copied TOKENS ID and title to clipboard",
 		},
 		{
 			name:       "container detail copies whole detail",
@@ -277,12 +278,12 @@ func TestCopySelectionMatchesViewAndFocus(t *testing.T) {
 			model.focus = test.focus
 			model = resize(t, model, 120, 28)
 
-			want := test.want
+			task, ok := model.snapshot.Task(test.id)
+			if !ok {
+				t.Fatalf("task %s not found", test.id)
+			}
+			want := taskReference(task)
 			if test.wantDetail {
-				task, ok := model.snapshot.Task(test.id)
-				if !ok {
-					t.Fatalf("task %s not found", test.id)
-				}
 				want = model.taskDetailMarkdown(task)
 			}
 			if footer := footerText(model); !strings.Contains(footer, test.wantLabel) {
@@ -348,10 +349,15 @@ func TestCopySelectedIDFooterWorksAcrossViewsAndWidths(t *testing.T) {
 			})
 			model = updated.(Model)
 
-			if got := clipboardCommandText(t, command); got != "TOKENS" {
-				t.Fatalf("clipboard content = %q, want TOKENS", got)
+			task, ok := model.snapshot.Task("TOKENS")
+			if !ok {
+				t.Fatal("task TOKENS not found")
 			}
-			if model.status != "Copied TOKENS to clipboard" {
+			want := taskReference(task)
+			if got := clipboardCommandText(t, command); got != want {
+				t.Fatalf("clipboard content = %q, want %q", got, want)
+			}
+			if model.status != "Copied TOKENS ID and title to clipboard" {
 				t.Fatalf("status = %q", model.status)
 			}
 		})
@@ -362,7 +368,7 @@ func TestCopyControlIsUnavailableWithoutSelection(t *testing.T) {
 	model := New(ergo.Snapshot{Root: t.TempDir()}, Options{NoColor: true})
 	model = resize(t, model, 72, 24)
 
-	if strings.Contains(ansi.Strip(model.View().Content), "copy ID") {
+	if strings.Contains(ansi.Strip(model.View().Content), "c copy") {
 		t.Fatal("empty snapshot rendered a copy control")
 	}
 	updated, command := model.Update(key("c"))
@@ -491,8 +497,8 @@ func TestCopyFooterHitBoundsAreHalfOpen(t *testing.T) {
 		Button: tea.MouseLeft,
 	})
 	model = updated.(Model)
-	if got := clipboardCommandText(t, command); got != "TOKENS" {
-		t.Fatalf("start-bound clipboard content = %q, want TOKENS", got)
+	if got := clipboardCommandText(t, command); !strings.HasPrefix(got, "TOKENS") {
+		t.Fatalf("start-bound clipboard content = %q, want a TOKENS reference", got)
 	}
 
 	model = newModel()

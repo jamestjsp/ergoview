@@ -14,7 +14,7 @@ func TestFooterEndsOnCompleteItems(t *testing.T) {
 		"new": true, "search": true, "filter": true, "epic": true,
 		"clear": true, "help": true, "quit": true, "pane": true,
 		"detail": true, "node": true, "focus": true, "back": true,
-		"depth": true, "ID": true,
+		"depth": true, "ref": true,
 	}
 	for _, size := range []struct{ width, height int }{
 		{40, 20}, {60, 20}, {72, 24}, {90, 24}, {140, 32},
@@ -136,7 +136,7 @@ func TestCopyControlIsHiddenDuringModalInput(t *testing.T) {
 			model = resize(t, model, 120, 28)
 			test.setup(&model)
 
-			if footer := footerText(model); strings.Contains(footer, "copy ID") {
+			if footer := footerText(model); strings.Contains(footer, "c copy") {
 				t.Fatalf("modal footer exposes copy control: %q", footer)
 			}
 		})
