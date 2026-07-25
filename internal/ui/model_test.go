@@ -204,13 +204,14 @@ func TestCopySelectedIDWithKeyboard(t *testing.T) {
 	}
 }
 
-func TestCopySelectionMatchesViewFocusAndBody(t *testing.T) {
+func TestCopySelectionMatchesViewAndFocus(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		id         string
 		view       viewMode
 		focus      focus
 		want       string
+		wantDetail bool
 		wantLabel  string
 		wantStatus string
 	}{
@@ -224,22 +225,22 @@ func TestCopySelectionMatchesViewFocusAndBody(t *testing.T) {
 			wantStatus: "Copied TOKENS to clipboard",
 		},
 		{
-			name:       "overview detail copies task body",
+			name:       "overview detail copies whole detail",
 			id:         "TOKENS",
 			view:       viewOverview,
 			focus:      focusDetail,
-			want:       "Use rotating refresh tokens.",
-			wantLabel:  "copy body",
-			wantStatus: "Copied TOKENS body to clipboard",
+			wantDetail: true,
+			wantLabel:  "copy detail",
+			wantStatus: "Copied TOKENS detail to clipboard",
 		},
 		{
-			name:       "empty detail body falls back to ID",
+			name:       "empty detail body still copies detail",
 			id:         "SCHEMA",
 			view:       viewOverview,
 			focus:      focusDetail,
-			want:       "SCHEMA",
-			wantLabel:  "copy ID",
-			wantStatus: "Copied SCHEMA to clipboard",
+			wantDetail: true,
+			wantLabel:  "copy detail",
+			wantStatus: "Copied SCHEMA detail to clipboard",
 		},
 		{
 			name:       "board ignores stale detail focus",
@@ -260,13 +261,13 @@ func TestCopySelectionMatchesViewFocusAndBody(t *testing.T) {
 			wantStatus: "Copied TOKENS to clipboard",
 		},
 		{
-			name:       "container detail copies container body",
+			name:       "container detail copies whole detail",
 			id:         "EPIC01",
 			view:       viewOverview,
 			focus:      focusDetail,
-			want:       "## Goal\nShip auth",
-			wantLabel:  "copy body",
-			wantStatus: "Copied EPIC01 body to clipboard",
+			wantDetail: true,
+			wantLabel:  "copy detail",
+			wantStatus: "Copied EPIC01 detail to clipboard",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -276,14 +277,22 @@ func TestCopySelectionMatchesViewFocusAndBody(t *testing.T) {
 			model.focus = test.focus
 			model = resize(t, model, 120, 28)
 
+			want := test.want
+			if test.wantDetail {
+				task, ok := model.snapshot.Task(test.id)
+				if !ok {
+					t.Fatalf("task %s not found", test.id)
+				}
+				want = model.taskDetailMarkdown(task)
+			}
 			if footer := footerText(model); !strings.Contains(footer, test.wantLabel) {
 				t.Fatalf("footer missing %q: %q", test.wantLabel, footer)
 			}
 			updated, command := model.Update(key("c"))
 			model = updated.(Model)
 
-			if got := clipboardCommandText(t, command); got != test.want {
-				t.Fatalf("clipboard content = %q, want %q", got, test.want)
+			if got := clipboardCommandText(t, command); got != want {
+				t.Fatalf("clipboard content = %q, want %q", got, want)
 			}
 			if model.status != test.wantStatus {
 				t.Fatalf("status = %q, want %q", model.status, test.wantStatus)
@@ -292,12 +301,13 @@ func TestCopySelectionMatchesViewFocusAndBody(t *testing.T) {
 	}
 }
 
-func TestCopyDetailBodyFromFooter(t *testing.T) {
+func TestCopyDetailFromFooterMatchesKeyboard(t *testing.T) {
 	model := testModel(t)
 	model.rebuildRows("TOKENS")
 	model.focus = focusDetail
 	model = resize(t, model, 120, 28)
 
+	_, keyboardCommand := model.Update(key("c"))
 	updated, command := model.Update(tea.MouseClickMsg{
 		X:      copyControlX(t, model),
 		Y:      model.height - 1,
@@ -305,10 +315,11 @@ func TestCopyDetailBodyFromFooter(t *testing.T) {
 	})
 	model = updated.(Model)
 
-	if got := clipboardCommandText(t, command); got != "Use rotating refresh tokens." {
-		t.Fatalf("clipboard content = %q", got)
+	keyboardText := clipboardCommandText(t, keyboardCommand)
+	if got := clipboardCommandText(t, command); got != keyboardText {
+		t.Fatalf("footer clipboard content differs from keyboard:\nfooter: %q\nkeyboard: %q", got, keyboardText)
 	}
-	if model.status != "Copied TOKENS body to clipboard" {
+	if model.status != "Copied TOKENS detail to clipboard" {
 		t.Fatalf("status = %q", model.status)
 	}
 }
