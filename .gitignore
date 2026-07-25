@@ -2,7 +2,8 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 #
 # Binaries for programs and plugins
-ev
+# Anchored so it matches the built binary at the repo root, not the cmd/ev package.
+/ev
 bin/
 dist/
 *.exe
