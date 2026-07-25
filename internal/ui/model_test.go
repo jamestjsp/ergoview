@@ -179,6 +179,100 @@ func TestCopyFooterDoesNotBypassActionMenu(t *testing.T) {
 	}
 }
 
+func TestFooterRowClaimsEveryMouseClick(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		view   viewMode
+		width  int
+		height int
+	}{
+		{name: "narrow overview", view: viewOverview, width: 72, height: 12},
+		{name: "wide overview", view: viewOverview, width: 120, height: 28},
+		{name: "board", view: viewBoard, width: 120, height: 28},
+		{name: "dependencies", view: viewDependencies, width: 120, height: 28},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := renderFixtureModel(t, true)
+			model.rebuildRows("DEDIT1")
+			model.setView(test.view)
+			model = resize(t, model, test.width, test.height)
+			model.status = "stale"
+			selected, focused := model.selected, model.focus
+
+			updated, command := model.Update(tea.MouseClickMsg{
+				X:      model.width - 2,
+				Y:      model.height - 1,
+				Button: tea.MouseLeft,
+			})
+			model = updated.(Model)
+
+			if command != nil {
+				t.Fatal("footer miss produced a command")
+			}
+			if model.selected != selected {
+				t.Fatalf("footer miss changed selection from %d to %d", selected, model.selected)
+			}
+			if model.focus != focused {
+				t.Fatalf("footer miss changed focus from %d to %d", focused, model.focus)
+			}
+			if model.status != "" {
+				t.Fatalf("footer miss left status %q", model.status)
+			}
+		})
+	}
+}
+
+func TestCopyFooterHitBoundsAreHalfOpen(t *testing.T) {
+	newModel := func() Model {
+		model := resize(t, testModel(t), 120, 28)
+		model.rebuildRows("TOKENS")
+		return model
+	}
+	placement := footerPlacementForAction(t, newModel(), footerActionCopyID)
+
+	model := newModel()
+	updated, command := model.Update(tea.MouseClickMsg{
+		X:      placement.start,
+		Y:      model.height - 1,
+		Button: tea.MouseLeft,
+	})
+	model = updated.(Model)
+	if got := clipboardCommandText(t, command); got != "TOKENS" {
+		t.Fatalf("start-bound clipboard content = %q, want TOKENS", got)
+	}
+
+	model = newModel()
+	model.status = "stale"
+	updated, command = model.Update(tea.MouseClickMsg{
+		X:      placement.end,
+		Y:      model.height - 1,
+		Button: tea.MouseLeft,
+	})
+	model = updated.(Model)
+	if command != nil {
+		t.Fatal("end-bound click produced a clipboard command")
+	}
+	if model.status != "" {
+		t.Fatalf("end-bound click left status %q", model.status)
+	}
+}
+
+func TestMouseClickClearsStatusAboveFooter(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.status = "stale"
+
+	updated, _ := model.Update(tea.MouseClickMsg{
+		X:      4,
+		Y:      4,
+		Button: tea.MouseLeft,
+	})
+	model = updated.(Model)
+
+	if model.status != "" {
+		t.Fatalf("mouse click left status %q", model.status)
+	}
+}
+
 func TestBoardKeepsWaitingSeparateFromBlocked(t *testing.T) {
 	model := resize(t, testModel(t), 140, 32)
 	model.setView(viewBoard)
@@ -394,6 +488,17 @@ func copyControlX(t *testing.T, model Model) int {
 		t.Fatalf("copy control not visible in footer:\n%s", ansi.Strip(model.View().Content))
 	}
 	return lipgloss.Width(footer[:index])
+}
+
+func footerPlacementForAction(t *testing.T, model Model, action footerAction) footerPlacement {
+	t.Helper()
+	for _, placement := range model.footerPlacements(model.footerItems()) {
+		if placement.item.action == action {
+			return placement
+		}
+	}
+	t.Fatalf("footer action %d not visible:\n%s", action, ansi.Strip(model.View().Content))
+	return footerPlacement{}
 }
 
 func assertFits(t *testing.T, content string, width, height int) {

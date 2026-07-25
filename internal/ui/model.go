@@ -194,6 +194,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, command
 		}
 	case tea.MouseClickMsg:
+		m.status = ""
 		if command := m.updateMouseClick(message); command != nil {
 			return m, command
 		}
@@ -329,8 +330,8 @@ func (m *Model) updateMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	if message.Button != tea.MouseLeft || m.help {
 		return nil
 	}
-	if command := m.updateFooterMouseClick(message); command != nil {
-		return command
+	if message.Y == m.height-1 {
+		return m.updateFooterMouseClick(message)
 	}
 	if m.view == viewDependencies {
 		m.updateGraphMouseClick(message)
