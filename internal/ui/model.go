@@ -51,7 +51,7 @@ type row struct {
 }
 
 type SnapshotSource interface {
-	Load() (ergo.Snapshot, error)
+	LoadIfChanged() (ergo.Snapshot, bool, error)
 }
 
 type CommandRunner interface {
@@ -161,7 +161,7 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.loadErr = nil
-		if message.snapshot.Version != m.snapshot.Version {
+		if message.changed {
 			selectedID := m.pendingSelection
 			if selectedID == "" {
 				selectedID = m.selectedID()
@@ -639,6 +639,7 @@ type reloadTickMsg time.Time
 
 type snapshotLoadedMsg struct {
 	snapshot ergo.Snapshot
+	changed  bool
 	err      error
 }
 
@@ -650,7 +651,7 @@ func nextReload() tea.Cmd {
 
 func loadSnapshot(source SnapshotSource) tea.Cmd {
 	return func() tea.Msg {
-		snapshot, err := source.Load()
-		return snapshotLoadedMsg{snapshot: snapshot, err: err}
+		snapshot, changed, err := source.LoadIfChanged()
+		return snapshotLoadedMsg{snapshot: snapshot, changed: changed, err: err}
 	}
 }

@@ -6,19 +6,25 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 const maxEventLineBytes = 10 * 1024 * 1024
 
+var errEventLineTooLong = errors.New("event line too long")
+
 type Repository struct {
 	root      string
 	ergoDir   string
 	eventPath string
+	mu        sync.Mutex
+	state     *repositoryState
 }
 
 func Open(start string) (*Repository, error) {
@@ -92,22 +98,6 @@ func (r *Repository) EventPath() string {
 	return r.eventPath
 }
 
-func (r *Repository) Load() (Snapshot, error) {
-	events, err := readEvents(r.eventPath)
-	if err != nil {
-		return Snapshot{}, err
-	}
-	tasks, deps, err := replay(events)
-	if err != nil {
-		return Snapshot{}, fmt.Errorf("%s: %w", r.eventPath, err)
-	}
-	version := ""
-	if info, statErr := os.Stat(r.eventPath); statErr == nil {
-		version = fmt.Sprintf("%d:%d", info.ModTime().UnixNano(), info.Size())
-	}
-	return buildSnapshot(r.root, r.ergoDir, r.eventPath, version, tasks, deps), nil
-}
-
 type event struct {
 	Type string          `json:"type"`
 	TS   string          `json:"ts"`
@@ -129,70 +119,115 @@ func readEvents(path string) ([]event, error) {
 		return nil, err
 	}
 	defer file.Close()
-
-	endsWithNewline := false
-	if info, statErr := file.Stat(); statErr == nil && info.Size() > 0 {
-		last := make([]byte, 1)
-		if _, readErr := file.ReadAt(last, info.Size()-1); readErr == nil {
-			endsWithNewline = last[0] == '\n'
-		}
-	}
-
-	scanner := bufio.NewScanner(file)
-	scanner.Buffer(make([]byte, 64*1024), maxEventLineBytes)
-	var (
-		events      []event
-		pending     []byte
-		pendingLine int
-		line        int
-	)
-	decode := func(lineNumber int, data []byte) error {
-		trimmed := bytes.TrimSpace(data)
-		if len(trimmed) == 0 {
-			return nil
-		}
-		var parsed event
-		if err := json.Unmarshal(trimmed, &parsed); err != nil {
-			snippet := string(trimmed)
-			if len(snippet) > 160 {
-				snippet = snippet[:160] + "…"
-			}
-			return fmt.Errorf("%s:%d: invalid JSON in events log: %s (%w)", path, lineNumber, snippet, err)
-		}
-		events = append(events, parsed)
-		return nil
-	}
-	for scanner.Scan() {
-		line++
-		if pending != nil {
-			if err := decode(pendingLine, pending); err != nil {
-				return nil, err
-			}
-		}
-		pending = append(pending[:0], scanner.Bytes()...)
-		pendingLine = line
-	}
-	if err := scanner.Err(); err != nil {
-		if errors.Is(err, bufio.ErrTooLong) {
-			return nil, fmt.Errorf("%s: event line exceeds %d bytes", path, maxEventLineBytes)
-		}
+	info, err := file.Stat()
+	if err != nil {
 		return nil, err
 	}
-	if pending != nil {
-		if err := decode(pendingLine, pending); err != nil {
-			if !endsWithNewline {
-				return events, nil
-			}
-			return nil, err
+	events, _, _, _, err := readEventRange(file, path, 0, info.Size(), 0)
+	return events, err
+}
+
+func readEventRange(file *os.File, path string, offset, size int64, lines int) ([]event, int64, int, bool, error) {
+	reader := bufio.NewReaderSize(io.NewSectionReader(file, offset, size-offset), 64*1024)
+	events := make([]event, 0)
+	committedOffset := offset
+	committedLines := lines
+
+	for {
+		lineStart := committedOffset
+		data, err := readBoundedLine(reader, maxEventLineBytes)
+		if errors.Is(err, errEventLineTooLong) {
+			return nil, offset, lines, false, fmt.Errorf("%s: event line exceeds %d bytes", path, maxEventLineBytes)
 		}
+		if len(data) == 0 && errors.Is(err, io.EOF) {
+			return events, committedOffset, committedLines, false, nil
+		}
+
+		lineNumber := committedLines + 1
+		parsed, present, decodeErr := decodeEventLine(path, lineNumber, data)
+		if decodeErr != nil {
+			if errors.Is(err, io.EOF) {
+				return events, lineStart, committedLines, false, nil
+			}
+			return nil, offset, lines, false, decodeErr
+		}
+		if present {
+			events = append(events, parsed)
+		}
+		committedOffset += int64(len(data))
+		committedLines++
+
+		if err == nil {
+			continue
+		}
+		if errors.Is(err, io.EOF) {
+			return events, committedOffset, committedLines, true, nil
+		}
+		return nil, offset, lines, false, err
 	}
-	return events, nil
+}
+
+func readBoundedLine(reader *bufio.Reader, limit int) ([]byte, error) {
+	var line []byte
+	for {
+		fragment, err := reader.ReadSlice('\n')
+		contentBytes := len(line) + len(fragment)
+		if err == nil && len(fragment) > 0 && fragment[len(fragment)-1] == '\n' {
+			contentBytes--
+		}
+		if contentBytes > limit {
+			return nil, errEventLineTooLong
+		}
+		line = append(line, fragment...)
+		if errors.Is(err, bufio.ErrBufferFull) {
+			continue
+		}
+		return line, err
+	}
+}
+
+func decodeEventLine(path string, lineNumber int, data []byte) (event, bool, error) {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 0 {
+		return event{}, false, nil
+	}
+	var parsed event
+	if err := json.Unmarshal(trimmed, &parsed); err != nil {
+		snippet := string(trimmed)
+		if len(snippet) > 160 {
+			snippet = snippet[:160] + "…"
+		}
+		return event{}, false, fmt.Errorf("%s:%d: invalid JSON in events log: %s (%w)", path, lineNumber, snippet, err)
+	}
+	return parsed, true, nil
 }
 
 func replay(events []event) (map[string]*taskRecord, map[string]map[string]struct{}, error) {
-	tasks := map[string]*taskRecord{}
-	deps := map[string]map[string]struct{}{}
-	tombstones := map[string]struct{}{}
+	state := newReplayState()
+	if err := replayInto(&state, events); err != nil {
+		return nil, nil, err
+	}
+	return state.tasks, state.deps, nil
+}
+
+type replayState struct {
+	tasks      map[string]*taskRecord
+	deps       map[string]map[string]struct{}
+	tombstones map[string]struct{}
+}
+
+func newReplayState() replayState {
+	return replayState{
+		tasks:      map[string]*taskRecord{},
+		deps:       map[string]map[string]struct{}{},
+		tombstones: map[string]struct{}{},
+	}
+}
+
+func replayInto(state *replayState, events []event) error {
+	tasks := state.tasks
+	deps := state.deps
+	tombstones := state.tombstones
 
 	for _, current := range events {
 		switch current.Type {
@@ -207,17 +242,17 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				CreatedAt string `json:"created_at"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if _, removed := tombstones[data.ID]; removed {
 				continue
 			}
 			if _, exists := tasks[data.ID]; exists {
-				return nil, nil, fmt.Errorf("duplicate task id %s", data.ID)
+				return fmt.Errorf("duplicate task id %s", data.ID)
 			}
 			createdAt, err := parseTime(data.CreatedAt)
 			if err != nil {
-				return nil, nil, err
+				return err
 			}
 			title, body := migrateLegacyTitle(data.Title, data.Body)
 			tasks[data.ID] = &taskRecord{
@@ -240,12 +275,12 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				TS    string `json:"ts"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.ID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				task.State = data.State
 				task.UpdatedAt = later(task.UpdatedAt, timestamp)
@@ -259,7 +294,7 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				AgentID string `json:"agent_id"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.ID]; task != nil {
 				task.ClaimedBy = data.AgentID
@@ -269,7 +304,7 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				ID string `json:"id"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.ID]; task != nil {
 				task.ClaimedBy = ""
@@ -281,7 +316,7 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				Type   string `json:"type"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if data.Type != "depends" {
 				continue
@@ -307,12 +342,12 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				TS    string `json:"ts"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.ID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				task.Title = data.Title
 				task.UpdatedAt = later(task.UpdatedAt, timestamp)
@@ -324,12 +359,12 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				TS   string `json:"ts"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.ID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				task.Body = data.Body
 				task.UpdatedAt = later(task.UpdatedAt, timestamp)
@@ -341,12 +376,12 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				TS     string `json:"ts"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.ID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				task.ParentID = data.EpicID
 				task.UpdatedAt = later(task.UpdatedAt, timestamp)
@@ -362,12 +397,12 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				TS                string `json:"ts"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.TaskID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				task.Results = append([]Result{{
 					Summary:           data.Summary,
@@ -387,12 +422,12 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				TS     string `json:"ts"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			if task := tasks[data.TaskID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
-					return nil, nil, err
+					return err
 				}
 				task.Messages = append([]Message{{
 					Kind:      data.Kind,
@@ -406,7 +441,7 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 				ID string `json:"id"`
 			}
 			if err := json.Unmarshal(current.Data, &data); err != nil {
-				return nil, nil, err
+				return err
 			}
 			tombstones[data.ID] = struct{}{}
 			delete(tasks, data.ID)
@@ -416,12 +451,21 @@ func replay(events []event) (map[string]*taskRecord, map[string]map[string]struc
 			}
 		}
 	}
-	return tasks, deps, nil
+	return nil
 }
 
 func buildSnapshot(root, ergoDir, eventPath, version string, records map[string]*taskRecord, deps map[string]map[string]struct{}) Snapshot {
 	children := map[string][]string{}
 	reverseDeps := map[string][]string{}
+	for _, task := range records {
+		task.Container = task.legacyContainer
+		task.Complete = false
+		task.Ready = false
+		task.Waiting = false
+		task.Dependencies = nil
+		task.Dependents = nil
+		task.Children = nil
+	}
 	for id, task := range records {
 		if task.ParentID != "" {
 			children[task.ParentID] = append(children[task.ParentID], id)

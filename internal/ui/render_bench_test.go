@@ -219,11 +219,11 @@ func BenchmarkReload(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for range b.N {
-		loaded, err := repository.Load()
+		loaded, changed, err := repository.LoadIfChanged()
 		if err != nil {
 			b.Fatal(err)
 		}
-		next, _ := model.Update(snapshotLoadedMsg{snapshot: loaded})
+		next, _ := model.Update(snapshotLoadedMsg{snapshot: loaded, changed: changed})
 		_ = next.(Model).View()
 	}
 }

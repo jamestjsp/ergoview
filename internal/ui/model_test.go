@@ -147,13 +147,33 @@ func TestLiveReloadPreservesExistingSelection(t *testing.T) {
 	model.rebuildRows("TOKENS")
 	updatedSnapshot := testSnapshot(t)
 	updatedSnapshot.Version = "external-change"
-	updated, _ := model.Update(snapshotLoadedMsg{snapshot: updatedSnapshot})
+	updated, _ := model.Update(snapshotLoadedMsg{snapshot: updatedSnapshot, changed: true})
 	model = updated.(Model)
 	if selected := model.selectedID(); selected != "TOKENS" {
 		t.Fatalf("selected = %q, want TOKENS", selected)
 	}
 	if model.status == "" {
 		t.Fatal("reload status was not set")
+	}
+}
+
+func TestLiveReloadSkipsUnchangedSnapshot(t *testing.T) {
+	snapshot := testSnapshot(t)
+	source := &stubSnapshotSource{snapshot: snapshot}
+	message := loadSnapshot(source)().(snapshotLoadedMsg)
+	if source.calls != 1 {
+		t.Fatalf("conditional loads = %d, want 1", source.calls)
+	}
+	if message.changed {
+		t.Fatal("unchanged source reported a changed snapshot")
+	}
+
+	model := New(snapshot, Options{Source: source})
+	model.status = "keep"
+	updated, _ := model.Update(message)
+	model = updated.(Model)
+	if model.status != "keep" {
+		t.Fatalf("unchanged reload replaced status with %q", model.status)
 	}
 }
 
@@ -182,6 +202,18 @@ func TestTerminalBackgroundSelectsThemePalette(t *testing.T) {
 	if model.dark {
 		t.Fatal("white terminal background did not select light theme")
 	}
+}
+
+type stubSnapshotSource struct {
+	snapshot ergo.Snapshot
+	changed  bool
+	err      error
+	calls    int
+}
+
+func (source *stubSnapshotSource) LoadIfChanged() (ergo.Snapshot, bool, error) {
+	source.calls++
+	return source.snapshot, source.changed, source.err
 }
 
 func testModel(t *testing.T) Model {
