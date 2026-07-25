@@ -1,0 +1,24 @@
+ ERGO VIEW  product-roadmap                 1 Outline  2 Board  3 Deps
+ 2 ready  1 doing  1 blocked  3 waiting
+╭──────────────────────────────────────────────────────────────────────╮
+│ DETAIL                                                               │
+│ DOING  DEDIT1                                                        │
+│ Add task editing workflows                                           │
+│ claimed by codex@workstation                                         │
+│ container  Desktop experience  DESK01                                │
+│                                                                      │
+│ Depends on                                                           │
+│   ← Graph foundations  CORE01                                        │
+│   ← Load Ergo repositories  DLOAD1                                   │
+│   ← Build board and dependency views  DVIEW1                         │
+│                                                                      │
+│ Unlocks                                                              │
+│   → Write install and keyboard guide  RDOCS1                         │
+│   → Review editing flow with the team  TREVW1                        │
+│                                                                      │
+│ Description                                                          │
+│                                                                      │
+│   ## Goal                                                            │
+│                                                                      │
+╰──────────────────────────────────────────────────────────────────────╯
+ j/k move  ·  1/2/3 views  ·  / search  ·  a actions  ·  c copy body

@@ -124,3 +124,8 @@
 {"type":"state","ts":"2026-07-25T20:29:11.323248Z","data":{"id":"T4EEXP","state":"done","ts":"2026-07-25T20:29:11.323248Z"}}
 {"type":"claim","ts":"2026-07-25T20:29:16.824607Z","data":{"id":"PNYOCY","agent_id":"codex@desktop","ts":"2026-07-25T20:29:16.824607Z"}}
 {"type":"state","ts":"2026-07-25T20:29:16.824607Z","data":{"id":"PNYOCY","state":"doing","ts":"2026-07-25T20:29:16.824607Z"}}
+{"type":"message","ts":"2026-07-25T20:31:59.589564Z","data":{"task_id":"PNYOCY","kind":"done","text":"Reordered footer priorities, hid inactive copy controls during modal input, and regenerated footer-only goldens/docs; verified with race tests, vet, and gofmt.","ts":"2026-07-25T20:31:59.589564Z"}}
+{"type":"unclaim","ts":"2026-07-25T20:31:59.589564Z","data":{"id":"PNYOCY","ts":"2026-07-25T20:31:59.589564Z"}}
+{"type":"state","ts":"2026-07-25T20:31:59.589564Z","data":{"id":"PNYOCY","state":"done","ts":"2026-07-25T20:31:59.589564Z"}}
+{"type":"claim","ts":"2026-07-25T20:32:03.414647Z","data":{"id":"KARLAW","agent_id":"codex@desktop","ts":"2026-07-25T20:32:03.414647Z"}}
+{"type":"state","ts":"2026-07-25T20:32:03.414647Z","data":{"id":"KARLAW","state":"doing","ts":"2026-07-25T20:32:03.414647Z"}}
