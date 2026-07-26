@@ -217,10 +217,10 @@ func TestCopyWritesSystemClipboardBeforeReportingSuccess(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	model.rebuildRows("TOKENS")
 	var written string
-	model.clipboard = newClipboardDestination(func(text string) error {
+	model.clipboard = newNativeClipboardDestination(func(text string) error {
 		written = text
 		return nil
-	}, false)
+	})
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
@@ -248,17 +248,20 @@ func TestCopyWritesSystemClipboardBeforeReportingSuccess(t *testing.T) {
 func TestNewUsesInjectedClipboardWriter(t *testing.T) {
 	var written string
 	options := testOptions(Options{})
-	options.clipboard = newClipboardDestination(func(text string) error {
+	options.clipboard = newNativeClipboardDestination(func(text string) error {
 		written = text
 		return nil
-	}, false)
+	})
 	model := New(testSnapshot(t), options)
 	model.rebuildRows("TOKENS")
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
 	want := model.pendingCopy.target.text
-	command()
+	message, ok := command().(clipboardResultMsg)
+	if !ok {
+		t.Fatalf("clipboard command message type = %T", message)
+	}
 
 	if written != want {
 		t.Fatalf("injected clipboard received %q, want %q", written, want)
@@ -274,12 +277,8 @@ func TestRemoteSessionUsesTerminalClipboard(t *testing.T) {
 		{name: "detail export", focus: focusDetail},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			writes := 0
 			options := testOptions(Options{})
-			options.clipboard = newClipboardDestination(func(string) error {
-				writes++
-				return nil
-			}, true)
+			options.clipboard = newTerminalClipboardDestination()
 			model := New(testSnapshot(t), options)
 			model.rebuildRows("TOKENS")
 			model.focus = test.focus
@@ -297,9 +296,6 @@ func TestRemoteSessionUsesTerminalClipboard(t *testing.T) {
 			updated, terminal := model.Update(message)
 			model = updated.(Model)
 
-			if writes != 0 {
-				t.Fatalf("remote copy performed %d native writes", writes)
-			}
 			if terminal == nil {
 				t.Fatal("remote copy did not produce a terminal clipboard command")
 			}
@@ -346,7 +342,7 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	model.rebuildRows("TOKENS")
 	writeErr := errors.New("system clipboard unavailable")
-	model.clipboard = newClipboardDestination(func(string) error { return writeErr }, false)
+	model.clipboard = newNativeClipboardDestination(func(string) error { return writeErr })
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
@@ -376,13 +372,13 @@ func TestClipboardTimeoutDegradesQueue(t *testing.T) {
 	release := make(chan struct{})
 	defer close(release)
 	var writes atomic.Int32
-	destination := newClipboardDestination(func(string) error {
+	destination := newNativeClipboardDestination(func(string) error {
 		if writes.Add(1) == 1 {
 			close(started)
 		}
 		<-release
 		return nil
-	}, false)
+	})
 	timeout := make(chan time.Time, 1)
 	durations := make(chan time.Duration, 1)
 	var afterCalls atomic.Int32
@@ -444,7 +440,7 @@ func TestClipboardTimeoutDegradesQueue(t *testing.T) {
 func TestLargeTerminalClipboardFallbackWarns(t *testing.T) {
 	model := testModel(t)
 	writeErr := errors.New("system clipboard unavailable")
-	model.clipboard = newClipboardDestination(func(string) error { return writeErr }, false)
+	model.clipboard = newNativeClipboardDestination(func(string) error { return writeErr })
 	target := copyTarget{
 		text:    strings.Repeat("x", osc52WarningThreshold+1),
 		subject: "TOKENS detail",
@@ -504,7 +500,7 @@ func TestCopyStatusIncludesSubjectForEveryOutcome(t *testing.T) {
 		{
 			name:    "fallback large",
 			outcome: clipboardOutcome{channel: clipboardFallback, size: 5000},
-			want:    "System clipboard unavailable; sent SNOWNB detail (4.9 KB) via terminal — large payloads may truncate",
+			want:    "System clipboard unavailable; sent SNOWNB detail (4.9 KB) via terminal clipboard — large payloads may truncate",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -512,6 +508,12 @@ func TestCopyStatusIncludesSubjectForEveryOutcome(t *testing.T) {
 				t.Fatalf("copyStatus() = %q, want %q", got, test.want)
 			}
 		})
+	}
+}
+
+func TestCopyStatusZeroValueIsSilent(t *testing.T) {
+	if got := copyStatus("TOKENS detail", clipboardOutcome{}); got != "" {
+		t.Fatalf("copyStatus() = %q, want no status for an unknown outcome", got)
 	}
 }
 
@@ -535,9 +537,68 @@ func TestClipboardCompletionAfterAnotherInteractionIsDropped(t *testing.T) {
 	}
 }
 
+func TestDetailScrollKeepsCopyConfirmationRelevant(t *testing.T) {
+	model := resize(t, testModel(t), 80, 24)
+	model.rebuildRows("TOKENS")
+	model.focus = focusDetail
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	updated, _ = model.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	model = updated.(Model)
+	message := command().(clipboardResultMsg)
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+
+	if fallback != nil {
+		t.Fatal("detail scroll caused a successful clipboard write to fall back")
+	}
+	const want = "Copied TOKENS detail to clipboard"
+	if model.status != want {
+		t.Fatalf("status after pending detail copy = %q, want %q", model.status, want)
+	}
+
+	updated, _ = model.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	model = updated.(Model)
+	if model.status != want {
+		t.Fatalf("status after completed detail copy = %q, want %q", model.status, want)
+	}
+}
+
+func TestOutlineScrollDismissesCopyConfirmation(t *testing.T) {
+	model := resize(t, testModel(t), 80, 24)
+	model.rebuildRows("TOKENS")
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	updated, _ = model.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	model = updated.(Model)
+	message := command().(clipboardResultMsg)
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+
+	if fallback != nil {
+		t.Fatal("outline scroll caused a successful clipboard write to fall back")
+	}
+	if model.status != "" {
+		t.Fatalf("pending copy status survived outline selection change: %q", model.status)
+	}
+
+	updated, command = model.Update(key("c"))
+	model = updated.(Model)
+	message = command().(clipboardResultMsg)
+	updated, _ = model.Update(message)
+	model = updated.(Model)
+	updated, _ = model.Update(tea.MouseWheelMsg{Button: tea.MouseWheelDown})
+	model = updated.(Model)
+	if model.status != "" {
+		t.Fatalf("completed copy status survived outline selection change: %q", model.status)
+	}
+}
+
 func TestTerminalClipboardDeliverySurvivesAnotherInteraction(t *testing.T) {
 	options := testOptions(Options{})
-	options.clipboard = newClipboardDestination(func(string) error { return nil }, true)
+	options.clipboard = newTerminalClipboardDestination()
 	model := resize(t, New(testSnapshot(t), options), 120, 28)
 	model.rebuildRows("TOKENS")
 
@@ -563,7 +624,7 @@ func TestTerminalClipboardDeliverySurvivesAnotherInteraction(t *testing.T) {
 
 func TestLatestCopyResultWinsWhenEarlierResultIsAlreadyQueued(t *testing.T) {
 	options := testOptions(Options{})
-	options.clipboard = newClipboardDestination(func(string) error { return nil }, true)
+	options.clipboard = newTerminalClipboardDestination()
 	model := resize(t, New(testSnapshot(t), options), 120, 28)
 
 	model.rebuildRows("TOKENS")
@@ -609,10 +670,10 @@ func TestLatestCopyResultWinsWhenEarlierResultIsAlreadyQueued(t *testing.T) {
 func TestLatestCopyRequestWins(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	var writes []string
-	model.clipboard = newClipboardDestination(func(text string) error {
+	model.clipboard = newNativeClipboardDestination(func(text string) error {
 		writes = append(writes, text)
 		return nil
-	}, false)
+	})
 
 	model.rebuildRows("TOKENS")
 	updated, firstCommand := model.Update(key("c"))
@@ -1131,7 +1192,7 @@ func testModel(t *testing.T) Model {
 }
 
 func testOptions(options Options) Options {
-	options.clipboard = newClipboardDestination(func(string) error { return nil }, false)
+	options.clipboard = newNativeClipboardDestination(func(string) error { return nil })
 	return options
 }
 

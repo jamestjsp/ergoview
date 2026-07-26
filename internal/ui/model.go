@@ -57,6 +57,9 @@ type copyTarget struct {
 	subject string
 }
 
+// pendingCopy binds a result to its clipboard request and the UI interaction
+// that initiated it. The request rejects stale payloads; the interaction only
+// controls whether the outcome is still relevant to show.
 type pendingCopy struct {
 	target      copyTarget
 	request     clipboardRequestID
@@ -160,7 +163,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
-	case tea.KeyPressMsg, tea.MouseClickMsg, tea.MouseWheelMsg:
+	case tea.KeyPressMsg, tea.MouseClickMsg:
 		m.interaction++
 	}
 	switch message := message.(type) {
@@ -259,6 +262,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.detail, command = m.detail.Update(message)
 			return m, command
 		}
+		m.interaction++
+		m.status = ""
 		switch message.Button {
 		case tea.MouseWheelUp:
 			m.moveSelection(-3)
@@ -475,6 +480,8 @@ func copyStatus(subject string, outcome clipboardOutcome) string {
 	large := outcome.size > osc52WarningThreshold
 	size := float64(outcome.size) / 1024
 	switch outcome.channel {
+	case clipboardUnknown:
+		return ""
 	case clipboardNative:
 		return "Copied " + subject + " to clipboard"
 	case clipboardTerminal:
@@ -489,7 +496,7 @@ func copyStatus(subject string, outcome clipboardOutcome) string {
 	case clipboardFallback:
 		if large {
 			return fmt.Sprintf(
-				"System clipboard unavailable; sent %s (%.1f KB) via terminal — large payloads may truncate",
+				"System clipboard unavailable; sent %s (%.1f KB) via terminal clipboard — large payloads may truncate",
 				subject,
 				size,
 			)

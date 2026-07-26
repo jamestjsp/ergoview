@@ -87,7 +87,7 @@ func (m Model) renderHeader() string {
 	left = ansi.Truncate(left, max(1, headerContentWidth-lipgloss.Width(tabs)-1), "…")
 	gap := max(1, headerContentWidth-lipgloss.Width(left)-lipgloss.Width(tabs))
 	first := m.styles.header.Width(m.width).Render(left + strings.Repeat(" ", gap) + tabs)
-	status := m.renderStatus()
+	status := ansi.Truncate(m.renderStatus(), headerContentWidth, "…")
 	return first + "\n" + m.styles.header.Width(m.width).Render(status)
 }
 

@@ -25,7 +25,8 @@ var (
 type clipboardChannel int
 
 const (
-	clipboardNative clipboardChannel = iota
+	clipboardUnknown clipboardChannel = iota
+	clipboardNative
 	clipboardTerminal
 	clipboardFallback
 )
@@ -60,22 +61,25 @@ type clipboardDestination struct {
 	degraded     bool
 }
 
-func newClipboardDestination(
-	writer func(string) error,
-	terminalOnly bool,
-) *clipboardDestination {
+func newNativeClipboardDestination(writer func(string) error) *clipboardDestination {
 	return &clipboardDestination{
-		writer:       writer,
+		writer: writer,
+		after:  time.After,
+	}
+}
+
+func newTerminalClipboardDestination() *clipboardDestination {
+	return &clipboardDestination{
 		after:        time.After,
-		terminalOnly: terminalOnly,
+		terminalOnly: true,
 	}
 }
 
 func systemClipboardDestination() *clipboardDestination {
-	return newClipboardDestination(
-		clipboard.WriteAll,
-		isRemoteSession(os.Getenv),
-	)
+	if isRemoteSession(os.Getenv) {
+		return newTerminalClipboardDestination()
+	}
+	return newNativeClipboardDestination(clipboard.WriteAll)
 }
 
 func (destination *clipboardDestination) copy(text string) clipboardRequest {

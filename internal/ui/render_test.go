@@ -150,6 +150,9 @@ func TestEveryViewOverlayFitsViewport(t *testing.T) {
 	}
 	overlays := []overlaySpec{
 		{name: "none"},
+		{name: "long status", setup: func(model *Model) {
+			model.status = "System clipboard unavailable; sent DEDIT1 detail (4.9 KB) via terminal clipboard — large payloads may truncate"
+		}},
 		{name: "help", setup: func(model *Model) {
 			model.help = true
 			model.syncHelpView(true)
