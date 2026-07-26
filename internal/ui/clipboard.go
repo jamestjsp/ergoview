@@ -2,7 +2,6 @@ package ui
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -137,24 +136,4 @@ func terminalClipboardResult(
 
 func isRemoteSession(getenv func(string) string) bool {
 	return getenv("SSH_CONNECTION") != "" || getenv("SSH_TTY") != ""
-}
-
-func terminalClipboardStatus(target copyTarget, systemUnavailable bool) string {
-	if len(target.text) > osc52WarningThreshold {
-		size := float64(len(target.text)) / 1024
-		if systemUnavailable {
-			return fmt.Sprintf(
-				"System clipboard unavailable; sent %.1f KB via terminal — large payloads may truncate",
-				size,
-			)
-		}
-		return fmt.Sprintf(
-			"Sent %.1f KB via terminal clipboard — large payloads may truncate",
-			size,
-		)
-	}
-	if systemUnavailable {
-		return "System clipboard unavailable; tried terminal clipboard"
-	}
-	return target.terminalStatus
 }

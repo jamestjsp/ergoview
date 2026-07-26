@@ -306,8 +306,9 @@ func TestRemoteSessionUsesTerminalClipboard(t *testing.T) {
 			if got := fmt.Sprint(terminal()); got != target.text {
 				t.Fatalf("terminal clipboard payload = %q, want %q", got, target.text)
 			}
-			if model.status != target.terminalStatus {
-				t.Fatalf("status = %q, want %q", model.status, target.terminalStatus)
+			wantStatus := copyStatus(target.subject, message.outcome)
+			if model.status != wantStatus {
+				t.Fatalf("status = %q, want %q", model.status, wantStatus)
 			}
 		})
 	}
@@ -365,7 +366,7 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 	if got := fmt.Sprint(fallback()); got != want {
 		t.Fatalf("OSC52 fallback content = %q, want %q", got, want)
 	}
-	if model.status != "System clipboard unavailable; tried terminal clipboard" {
+	if model.status != "System clipboard unavailable; sent TOKENS ID and title via terminal clipboard" {
 		t.Fatalf("status = %q", model.status)
 	}
 }
@@ -444,7 +445,10 @@ func TestLargeTerminalClipboardFallbackWarns(t *testing.T) {
 	model := testModel(t)
 	writeErr := errors.New("system clipboard unavailable")
 	model.clipboard = newClipboardDestination(func(string) error { return writeErr }, false)
-	target := copyTarget{text: strings.Repeat("x", osc52WarningThreshold+1)}
+	target := copyTarget{
+		text:    strings.Repeat("x", osc52WarningThreshold+1),
+		subject: "TOKENS detail",
+	}
 	model.pendingCopy = target
 	model.copyInteraction = model.interaction
 
@@ -460,6 +464,50 @@ func TestLargeTerminalClipboardFallbackWarns(t *testing.T) {
 	}
 	if !strings.Contains(model.status, "large payloads may truncate") {
 		t.Fatalf("status does not warn about truncation: %q", model.status)
+	}
+	if !strings.Contains(model.status, target.subject) {
+		t.Fatalf("status does not name copied subject: %q", model.status)
+	}
+}
+
+func TestCopyStatusIncludesSubjectForEveryOutcome(t *testing.T) {
+	const subject = "SNOWNB detail"
+	for _, test := range []struct {
+		name    string
+		outcome clipboardOutcome
+		want    string
+	}{
+		{
+			name:    "native",
+			outcome: clipboardOutcome{channel: clipboardNative, size: 5000},
+			want:    "Copied SNOWNB detail to clipboard",
+		},
+		{
+			name:    "terminal small",
+			outcome: clipboardOutcome{channel: clipboardTerminal, size: 100},
+			want:    "Sent SNOWNB detail via terminal clipboard",
+		},
+		{
+			name:    "terminal large",
+			outcome: clipboardOutcome{channel: clipboardTerminal, size: 5000},
+			want:    "Sent SNOWNB detail (4.9 KB) via terminal clipboard — large payloads may truncate",
+		},
+		{
+			name:    "fallback small",
+			outcome: clipboardOutcome{channel: clipboardFallback, size: 100},
+			want:    "System clipboard unavailable; sent SNOWNB detail via terminal clipboard",
+		},
+		{
+			name:    "fallback large",
+			outcome: clipboardOutcome{channel: clipboardFallback, size: 5000},
+			want:    "System clipboard unavailable; sent SNOWNB detail (4.9 KB) via terminal — large payloads may truncate",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := copyStatus(subject, test.outcome); got != test.want {
+				t.Fatalf("copyStatus() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }
 
@@ -480,6 +528,32 @@ func TestClipboardCompletionAfterAnotherInteractionIsDropped(t *testing.T) {
 	}
 	if model.status != "" {
 		t.Fatalf("late clipboard completion set status %q", model.status)
+	}
+}
+
+func TestTerminalClipboardDeliverySurvivesAnotherInteraction(t *testing.T) {
+	options := testOptions(Options{})
+	options.clipboard = newClipboardDestination(func(string) error { return nil }, true)
+	model := resize(t, New(testSnapshot(t), options), 120, 28)
+	model.rebuildRows("TOKENS")
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	want := model.pendingCopy.text
+	updated, _ = model.Update(key("j"))
+	model = updated.(Model)
+	message := command().(clipboardResultMsg)
+	updated, terminal := model.Update(message)
+	model = updated.(Model)
+
+	if terminal == nil {
+		t.Fatal("late terminal result dropped the clipboard delivery command")
+	}
+	if got := fmt.Sprint(terminal()); got != want {
+		t.Fatalf("terminal clipboard payload = %q, want %q", got, want)
+	}
+	if model.status != "" {
+		t.Fatalf("late terminal result set status %q", model.status)
 	}
 }
 

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -51,10 +52,9 @@ type row struct {
 }
 
 type copyTarget struct {
-	text           string
-	label          string
-	status         string
-	terminalStatus string
+	text    string
+	label   string
+	subject string
 }
 
 type SnapshotSource interface {
@@ -212,18 +212,11 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case clipboardResultMsg:
 		if m.copyInteraction != m.interaction {
 			m.pendingCopy = copyTarget{}
-			return m, nil
+			return m, message.command
 		}
 		target := m.pendingCopy
 		m.pendingCopy = copyTarget{}
-		switch message.outcome.channel {
-		case clipboardNative:
-			m.status = target.status
-		case clipboardTerminal:
-			m.status = terminalClipboardStatus(target, false)
-		case clipboardFallback:
-			m.status = terminalClipboardStatus(target, true)
-		}
+		m.status = copyStatus(target.subject, message.outcome)
 		return m, message.command
 	case tea.KeyPressMsg:
 		m.status = ""
@@ -454,18 +447,45 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 	}
 	if m.copiesDetail() {
 		return copyTarget{
-			text:           m.taskDetailMarkdown(task),
-			label:          label,
-			status:         "Copied " + id + " detail to clipboard",
-			terminalStatus: "Sent " + id + " detail via terminal clipboard",
+			text:    m.taskDetailMarkdown(task),
+			label:   label,
+			subject: id + " detail",
 		}, true
 	}
 	return copyTarget{
-		text:           taskReference(task),
-		label:          label,
-		status:         "Copied " + id + " ID and title to clipboard",
-		terminalStatus: "Sent " + id + " ID and title via terminal clipboard",
+		text:    taskReference(task),
+		label:   label,
+		subject: id + " ID and title",
 	}, true
+}
+
+func copyStatus(subject string, outcome clipboardOutcome) string {
+	large := outcome.size > osc52WarningThreshold
+	size := float64(outcome.size) / 1024
+	switch outcome.channel {
+	case clipboardNative:
+		return "Copied " + subject + " to clipboard"
+	case clipboardTerminal:
+		if large {
+			return fmt.Sprintf(
+				"Sent %s (%.1f KB) via terminal clipboard — large payloads may truncate",
+				subject,
+				size,
+			)
+		}
+		return "Sent " + subject + " via terminal clipboard"
+	case clipboardFallback:
+		if large {
+			return fmt.Sprintf(
+				"System clipboard unavailable; sent %s (%.1f KB) via terminal — large payloads may truncate",
+				subject,
+				size,
+			)
+		}
+		return "System clipboard unavailable; sent " + subject + " via terminal clipboard"
+	default:
+		return ""
+	}
 }
 
 // taskReference is the outline payload: the ID a caller pastes into a command,
