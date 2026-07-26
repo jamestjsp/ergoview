@@ -66,20 +66,18 @@ type CommandRunner interface {
 }
 
 type Options struct {
-	Agent           string
-	NoColor         bool
-	Source          SnapshotSource
-	Runner          CommandRunner
-	clipboardWriter func(string) error
-	remoteSession   func() bool
+	Agent     string
+	NoColor   bool
+	Source    SnapshotSource
+	Runner    CommandRunner
+	clipboard *clipboardDestination
 }
 
 type Model struct {
 	snapshot          ergo.Snapshot
 	source            SnapshotSource
 	runner            CommandRunner
-	clipboard         *clipboardQueue
-	remoteSession     bool
+	clipboard         *clipboardDestination
 	rows              []row
 	selected          int
 	focus             focus
@@ -102,6 +100,8 @@ type Model struct {
 	helpView          viewport.Model
 	status            string
 	interaction       uint64
+	copyInteraction   uint64
+	pendingCopy       copyTarget
 	loadErr           error
 	graphFocusID      string
 	graphFocusHistory []string
@@ -110,28 +110,23 @@ type Model struct {
 
 func New(snapshot ergo.Snapshot, options Options) Model {
 	noColor := options.NoColor || os.Getenv("NO_COLOR") != ""
-	clipboardWriter := options.clipboardWriter
-	if clipboardWriter == nil {
-		clipboardWriter = writeSystemClipboard
-	}
-	remoteSession := options.remoteSession
-	if remoteSession == nil {
-		remoteSession = func() bool { return isRemoteSession(os.Getenv) }
+	clipboard := options.clipboard
+	if clipboard == nil {
+		clipboard = systemClipboardDestination()
 	}
 	search := textinput.New()
 	search.Prompt = "/ "
 	search.CharLimit = 160
 	model := Model{
-		snapshot:      snapshot,
-		source:        options.Source,
-		runner:        options.Runner,
-		clipboard:     newClipboardQueue(clipboardWriter),
-		remoteSession: remoteSession(),
-		dark:          true,
-		noColor:       noColor,
-		agent:         options.Agent,
-		styles:        newStyles(true, noColor),
-		search:        search,
+		snapshot:  snapshot,
+		source:    options.Source,
+		runner:    options.Runner,
+		clipboard: clipboard,
+		dark:      true,
+		noColor:   noColor,
+		agent:     options.Agent,
+		styles:    newStyles(true, noColor),
+		search:    search,
 		detail: viewport.New(
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
@@ -214,16 +209,22 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case actionResultMsg:
 		updated, command := m.handleActionResult(message)
 		return updated, command
-	case clipboardWriteMsg:
-		if !m.clipboard.isLatest(message.sequence) || message.interaction != m.interaction {
+	case clipboardResultMsg:
+		if m.copyInteraction != m.interaction {
+			m.pendingCopy = copyTarget{}
 			return m, nil
 		}
-		if message.err != nil {
-			m.status = terminalClipboardStatus(message.target, true)
-			return m, tea.SetClipboard(message.target.text)
+		target := m.pendingCopy
+		m.pendingCopy = copyTarget{}
+		switch message.outcome.channel {
+		case clipboardNative:
+			m.status = target.status
+		case clipboardTerminal:
+			m.status = terminalClipboardStatus(target, false)
+		case clipboardFallback:
+			m.status = terminalClipboardStatus(target, true)
 		}
-		m.status = message.target.status
-		return m, nil
+		return m, message.command
 	case tea.KeyPressMsg:
 		m.status = ""
 		if m.dialog != nil {
@@ -436,11 +437,9 @@ func (m *Model) copySelection() tea.Cmd {
 	if !ok || m.clipboard == nil {
 		return nil
 	}
-	if m.remoteSession {
-		m.status = terminalClipboardStatus(target, false)
-		return tea.SetClipboard(target.text)
-	}
-	return m.clipboard.request(target, m.interaction)
+	m.pendingCopy = target
+	m.copyInteraction = m.interaction
+	return m.clipboard.copy(target.text)
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
@@ -467,10 +466,6 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 		status:         "Copied " + id + " ID and title to clipboard",
 		terminalStatus: "Sent " + id + " ID and title via terminal clipboard",
 	}, true
-}
-
-func isRemoteSession(getenv func(string) string) bool {
-	return getenv("SSH_CONNECTION") != "" || getenv("SSH_TTY") != ""
 }
 
 // taskReference is the outline payload: the ID a caller pastes into a command,
