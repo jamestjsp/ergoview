@@ -392,6 +392,47 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 	}
 }
 
+func TestLargeTerminalClipboardFallbackWarns(t *testing.T) {
+	model := testModel(t)
+	writeErr := errors.New("system clipboard unavailable")
+	model.clipboard = newClipboardQueue(func(string) error { return writeErr })
+	target := copyTarget{text: strings.Repeat("x", osc52WarningThreshold+1)}
+
+	message := model.clipboard.request(target, model.interaction)().(clipboardWriteMsg)
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+
+	if fallback == nil {
+		t.Fatal("large failed system clipboard write did not produce an OSC52 fallback")
+	}
+	if !strings.Contains(model.status, "3.0 KB") {
+		t.Fatalf("status does not name payload size: %q", model.status)
+	}
+	if !strings.Contains(model.status, "large payloads may truncate") {
+		t.Fatalf("status does not warn about truncation: %q", model.status)
+	}
+}
+
+func TestClipboardCompletionAfterAnotherInteractionIsDropped(t *testing.T) {
+	model := resize(t, testModel(t), 120, 28)
+	model.rebuildRows("TOKENS")
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	updated, _ = model.Update(key("j"))
+	model = updated.(Model)
+	message := command().(clipboardWriteMsg)
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+
+	if fallback != nil {
+		t.Fatal("late clipboard completion produced a fallback")
+	}
+	if model.status != "" {
+		t.Fatalf("late clipboard completion set status %q", model.status)
+	}
+}
+
 func TestLatestCopyRequestWins(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	var writes []string

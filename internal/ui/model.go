@@ -101,6 +101,7 @@ type Model struct {
 	detail            viewport.Model
 	helpView          viewport.Model
 	status            string
+	interaction       uint64
 	loadErr           error
 	graphFocusID      string
 	graphFocusHistory []string
@@ -158,6 +159,10 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message.(type) {
+	case tea.KeyPressMsg, tea.MouseClickMsg, tea.MouseWheelMsg:
+		m.interaction++
+	}
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		m.width = message.Width
@@ -210,11 +215,11 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		updated, command := m.handleActionResult(message)
 		return updated, command
 	case clipboardWriteMsg:
-		if !m.clipboard.isLatest(message.sequence) {
+		if !m.clipboard.isLatest(message.sequence) || message.interaction != m.interaction {
 			return m, nil
 		}
 		if message.err != nil {
-			m.status = "System clipboard unavailable; tried terminal clipboard"
+			m.status = terminalClipboardStatus(message.target, true)
 			return m, tea.SetClipboard(message.target.text)
 		}
 		m.status = message.target.status
@@ -433,10 +438,10 @@ func (m *Model) copySelection() tea.Cmd {
 	}
 	if m.remoteSession {
 		m.clipboard.supersede()
-		m.status = target.terminalStatus
+		m.status = terminalClipboardStatus(target, false)
 		return tea.SetClipboard(target.text)
 	}
-	return m.clipboard.request(target)
+	return m.clipboard.request(target, m.interaction)
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
