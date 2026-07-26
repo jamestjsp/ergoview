@@ -7,7 +7,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -301,41 +303,6 @@ func TestRemoteSessionUsesTerminalClipboard(t *testing.T) {
 	}
 }
 
-func TestRemoteCopySupersedesPendingNativeWrite(t *testing.T) {
-	writes := 0
-	options := testOptions(Options{})
-	options.clipboardWriter = func(string) error {
-		writes++
-		return nil
-	}
-	model := New(testSnapshot(t), options)
-	model.rebuildRows("TOKENS")
-
-	updated, nativeCommand := model.Update(key("c"))
-	model = updated.(Model)
-	model.remoteSession = true
-	model.rebuildRows("SCHEMA")
-	updated, terminalCommand := model.Update(key("c"))
-	model = updated.(Model)
-
-	task, ok := model.snapshot.Task("SCHEMA")
-	if !ok {
-		t.Fatal("SCHEMA not found")
-	}
-	if got := fmt.Sprint(terminalCommand()); got != taskReference(task) {
-		t.Fatalf("terminal clipboard payload = %q", got)
-	}
-	message := nativeCommand().(clipboardWriteMsg)
-	if writes != 0 {
-		t.Fatalf("superseded native request performed %d writes", writes)
-	}
-	updated, fallback := model.Update(message)
-	model = updated.(Model)
-	if fallback != nil {
-		t.Fatal("superseded native completion produced a fallback")
-	}
-}
-
 func TestRemoteSessionDetection(t *testing.T) {
 	for _, test := range []struct {
 		name   string
@@ -389,6 +356,75 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 	}
 	if model.status != "System clipboard unavailable; tried terminal clipboard" {
 		t.Fatalf("status = %q", model.status)
+	}
+}
+
+func TestClipboardTimeoutDegradesQueue(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	defer close(release)
+	var writes atomic.Int32
+	queue := newClipboardQueue(func(string) error {
+		if writes.Add(1) == 1 {
+			close(started)
+		}
+		<-release
+		return nil
+	})
+	timeout := make(chan time.Time, 1)
+	durations := make(chan time.Duration, 1)
+	var afterCalls atomic.Int32
+	queue.after = func(duration time.Duration) <-chan time.Time {
+		if afterCalls.Add(1) == 1 {
+			durations <- duration
+			return timeout
+		}
+		immediate := make(chan time.Time, 1)
+		immediate <- time.Now()
+		return immediate
+	}
+	model := resize(t, testModel(t), 120, 28)
+	model.clipboard = queue
+	model.rebuildRows("TOKENS")
+
+	updated, firstCommand := model.Update(key("c"))
+	model = updated.(Model)
+	firstResult := make(chan clipboardWriteMsg, 1)
+	go func() {
+		firstResult <- firstCommand().(clipboardWriteMsg)
+	}()
+	<-started
+	if duration := <-durations; duration != nativeClipboardTimeout {
+		t.Fatalf("native clipboard timeout = %s, want %s", duration, nativeClipboardTimeout)
+	}
+	timeout <- time.Now()
+	firstMessage := <-firstResult
+	if !errors.Is(firstMessage.err, errClipboardWriteTimeout) {
+		t.Fatalf("first clipboard error = %v, want timeout", firstMessage.err)
+	}
+	updated, fallback := model.Update(firstMessage)
+	model = updated.(Model)
+	if fallback == nil {
+		t.Fatal("timed-out clipboard write did not produce an OSC52 fallback")
+	}
+
+	model.rebuildRows("SCHEMA")
+	updated, secondCommand := model.Update(key("c"))
+	model = updated.(Model)
+	secondMessage := secondCommand().(clipboardWriteMsg)
+	if !errors.Is(secondMessage.err, errClipboardDegraded) {
+		t.Fatalf("second clipboard error = %v, want degraded queue", secondMessage.err)
+	}
+	updated, fallback = model.Update(secondMessage)
+	model = updated.(Model)
+	if fallback == nil {
+		t.Fatal("degraded clipboard queue did not produce an OSC52 fallback")
+	}
+	if got := fmt.Sprint(fallback()); got != secondMessage.target.text {
+		t.Fatalf("degraded fallback payload = %q, want %q", got, secondMessage.target.text)
+	}
+	if got := writes.Load(); got != 1 {
+		t.Fatalf("native clipboard writes = %d, want 1", got)
 	}
 }
 

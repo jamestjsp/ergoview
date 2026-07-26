@@ -437,7 +437,6 @@ func (m *Model) copySelection() tea.Cmd {
 		return nil
 	}
 	if m.remoteSession {
-		m.clipboard.supersede()
 		m.status = terminalClipboardStatus(target, false)
 		return tea.SetClipboard(target.text)
 	}

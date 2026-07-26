@@ -1,9 +1,11 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/atotto/clipboard"
@@ -12,6 +14,13 @@ import (
 // osc52WarningThreshold keeps the base64-encoded control sequence near 4 KiB,
 // a conservative interoperability budget rather than a terminal-specific limit.
 const osc52WarningThreshold = 3 * 1024
+
+const nativeClipboardTimeout = 2 * time.Second
+
+var (
+	errClipboardWriteTimeout = errors.New("native clipboard write timed out")
+	errClipboardDegraded     = errors.New("native clipboard disabled after timeout")
+)
 
 type clipboardWriteMsg struct {
 	sequence    uint64
@@ -22,8 +31,10 @@ type clipboardWriteMsg struct {
 
 type clipboardQueue struct {
 	writer   func(string) error
+	after    func(time.Duration) <-chan time.Time
 	writeMu  sync.Mutex
 	sequence atomic.Uint64
+	degraded bool
 }
 
 func writeSystemClipboard(text string) error {
@@ -31,7 +42,10 @@ func writeSystemClipboard(text string) error {
 }
 
 func newClipboardQueue(writer func(string) error) *clipboardQueue {
-	return &clipboardQueue{writer: writer}
+	return &clipboardQueue{
+		writer: writer,
+		after:  time.After,
+	}
 }
 
 func (q *clipboardQueue) request(target copyTarget, interaction uint64) tea.Cmd {
@@ -46,21 +60,38 @@ func (q *clipboardQueue) request(target copyTarget, interaction uint64) tea.Cmd 
 				target:      target,
 			}
 		}
+		if q.degraded {
+			return clipboardWriteMsg{
+				sequence:    sequence,
+				interaction: interaction,
+				target:      target,
+				err:         errClipboardDegraded,
+			}
+		}
+		result := make(chan error, 1)
+		go func() {
+			result <- q.writer(target.text)
+		}()
+		var err error
+		select {
+		case err = <-result:
+		case <-q.after(nativeClipboardTimeout):
+			// The writer cannot be canceled. Degrading permanently limits the
+			// residual stale-overwrite risk to this one orphaned native write.
+			q.degraded = true
+			err = errClipboardWriteTimeout
+		}
 		return clipboardWriteMsg{
 			sequence:    sequence,
 			interaction: interaction,
 			target:      target,
-			err:         q.writer(target.text),
+			err:         err,
 		}
 	}
 }
 
 func (q *clipboardQueue) isLatest(sequence uint64) bool {
 	return q.sequence.Load() == sequence
-}
-
-func (q *clipboardQueue) supersede() {
-	q.sequence.Add(1)
 }
 
 func terminalClipboardStatus(target copyTarget, systemUnavailable bool) string {
