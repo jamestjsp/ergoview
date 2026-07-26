@@ -33,3 +33,52 @@ archives:
 
 checksum:
   name_template: checksums.txt
+
+homebrew_casks:
+  - name: ergoview
+    ids:
+      - default
+    binaries:
+      - ev
+    homepage: https://github.com/jamestjsp/ergoview
+    description: Terminal companion for Ergo task graphs
+    license: MIT
+    repository:
+      owner: jamestjsp
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ev"]
+          end
+
+winget:
+  - name: ergoview
+    publisher: James Joseph
+    package_identifier: JamesJoseph.ErgoView
+    package_name: Ergo View
+    ids:
+      - default
+    short_description: Terminal companion for Ergo task graphs
+    description: A responsive TUI for exploring and managing Ergo task graphs.
+    license: MIT
+    homepage: https://github.com/jamestjsp/ergoview
+    publisher_url: https://github.com/jamestjsp
+    publisher_support_url: https://github.com/jamestjsp/ergoview/issues
+    tags:
+      - cli
+      - tui
+      - task-management
+      - developer-tools
+    repository:
+      owner: jamestjsp
+      name: winget-pkgs
+      token: "{{ .Env.WINGET_GITHUB_TOKEN }}"
+      pull_request:
+        enabled: true
+        base:
+          owner: microsoft
+          name: winget-pkgs
+          branch: master

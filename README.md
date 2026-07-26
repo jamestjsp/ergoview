@@ -8,11 +8,25 @@ Ergo View is a responsive terminal companion for [Ergo](https://github.com/sando
 
 Ergo View requires Go 1.25.8 or newer and Ergo 3 available as `ergo` on `PATH`.
 
+On macOS with Homebrew:
+
+```sh
+brew install --cask jamestjsp/tap/ergoview
+```
+
+On Windows with WinGet:
+
+```powershell
+winget install --id JamesJoseph.ErgoView --exact
+```
+
+Or install from source with Go:
+
 ```sh
 go install github.com/jamestjsp/ergoview/cmd/ev@latest
 ```
 
-Tagged releases also provide `ev` archives for macOS and Linux and `ev.exe` ZIP files for Windows. Download the archive for your platform from [Releases](https://github.com/jamestjsp/ergoview/releases), extract it, and put the executable on `PATH`.
+Tagged releases also provide `ev` archives for macOS and Linux and `ev.exe` ZIP files for Windows. Download the archive for your platform from [Releases](https://github.com/jamestjsp/ergoview/releases), extract it, and put the executable on `PATH`. New WinGet packages become available after Microsoft validates and merges their catalog submission.
 
 Run `ev` anywhere inside an Ergo project:
 
