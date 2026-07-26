@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -51,10 +52,18 @@ type row struct {
 }
 
 type copyTarget struct {
-	text           string
-	label          string
-	status         string
-	terminalStatus string
+	text    string
+	label   string
+	subject string
+}
+
+// pendingCopy binds a result to its clipboard request and the UI interaction
+// that initiated it. The request rejects stale payloads; the interaction only
+// controls whether the outcome is still relevant to show.
+type pendingCopy struct {
+	target      copyTarget
+	request     clipboardRequestID
+	interaction uint64
 }
 
 type SnapshotSource interface {
@@ -66,20 +75,18 @@ type CommandRunner interface {
 }
 
 type Options struct {
-	Agent           string
-	NoColor         bool
-	Source          SnapshotSource
-	Runner          CommandRunner
-	clipboardWriter func(string) error
-	remoteSession   func() bool
+	Agent     string
+	NoColor   bool
+	Source    SnapshotSource
+	Runner    CommandRunner
+	clipboard *clipboardDestination
 }
 
 type Model struct {
 	snapshot          ergo.Snapshot
 	source            SnapshotSource
 	runner            CommandRunner
-	clipboard         *clipboardQueue
-	remoteSession     bool
+	clipboard         *clipboardDestination
 	rows              []row
 	selected          int
 	focus             focus
@@ -102,6 +109,7 @@ type Model struct {
 	helpView          viewport.Model
 	status            string
 	interaction       uint64
+	pendingCopy       pendingCopy
 	loadErr           error
 	graphFocusID      string
 	graphFocusHistory []string
@@ -110,28 +118,23 @@ type Model struct {
 
 func New(snapshot ergo.Snapshot, options Options) Model {
 	noColor := options.NoColor || os.Getenv("NO_COLOR") != ""
-	clipboardWriter := options.clipboardWriter
-	if clipboardWriter == nil {
-		clipboardWriter = writeSystemClipboard
-	}
-	remoteSession := options.remoteSession
-	if remoteSession == nil {
-		remoteSession = func() bool { return isRemoteSession(os.Getenv) }
+	clipboard := options.clipboard
+	if clipboard == nil {
+		clipboard = systemClipboardDestination()
 	}
 	search := textinput.New()
 	search.Prompt = "/ "
 	search.CharLimit = 160
 	model := Model{
-		snapshot:      snapshot,
-		source:        options.Source,
-		runner:        options.Runner,
-		clipboard:     newClipboardQueue(clipboardWriter),
-		remoteSession: remoteSession(),
-		dark:          true,
-		noColor:       noColor,
-		agent:         options.Agent,
-		styles:        newStyles(true, noColor),
-		search:        search,
+		snapshot:  snapshot,
+		source:    options.Source,
+		runner:    options.Runner,
+		clipboard: clipboard,
+		dark:      true,
+		noColor:   noColor,
+		agent:     options.Agent,
+		styles:    newStyles(true, noColor),
+		search:    search,
 		detail: viewport.New(
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
@@ -160,7 +163,7 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch message.(type) {
-	case tea.KeyPressMsg, tea.MouseClickMsg, tea.MouseWheelMsg:
+	case tea.KeyPressMsg, tea.MouseClickMsg:
 		m.interaction++
 	}
 	switch message := message.(type) {
@@ -214,16 +217,18 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case actionResultMsg:
 		updated, command := m.handleActionResult(message)
 		return updated, command
-	case clipboardWriteMsg:
-		if !m.clipboard.isLatest(message.sequence) || message.interaction != m.interaction {
+	case clipboardResultMsg:
+		if message.request != m.pendingCopy.request {
 			return m, nil
 		}
-		if message.err != nil {
-			m.status = terminalClipboardStatus(message.target, true)
-			return m, tea.SetClipboard(message.target.text)
+		if m.pendingCopy.interaction != m.interaction {
+			m.pendingCopy = pendingCopy{}
+			return m, message.command
 		}
-		m.status = message.target.status
-		return m, nil
+		target := m.pendingCopy.target
+		m.pendingCopy = pendingCopy{}
+		m.status = copyStatus(target.subject, message.outcome)
+		return m, message.command
 	case tea.KeyPressMsg:
 		m.status = ""
 		if m.dialog != nil {
@@ -257,6 +262,8 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.detail, command = m.detail.Update(message)
 			return m, command
 		}
+		m.interaction++
+		m.status = ""
 		switch message.Button {
 		case tea.MouseWheelUp:
 			m.moveSelection(-3)
@@ -436,11 +443,13 @@ func (m *Model) copySelection() tea.Cmd {
 	if !ok || m.clipboard == nil {
 		return nil
 	}
-	if m.remoteSession {
-		m.status = terminalClipboardStatus(target, false)
-		return tea.SetClipboard(target.text)
+	request := m.clipboard.copy(target.text)
+	m.pendingCopy = pendingCopy{
+		target:      target,
+		request:     request.id,
+		interaction: m.interaction,
 	}
-	return m.clipboard.request(target, m.interaction)
+	return request.command
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
@@ -455,22 +464,47 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 	}
 	if m.copiesDetail() {
 		return copyTarget{
-			text:           m.taskDetailMarkdown(task),
-			label:          label,
-			status:         "Copied " + id + " detail to clipboard",
-			terminalStatus: "Sent " + id + " detail via terminal clipboard",
+			text:    m.taskDetailMarkdown(task),
+			label:   label,
+			subject: id + " detail",
 		}, true
 	}
 	return copyTarget{
-		text:           taskReference(task),
-		label:          label,
-		status:         "Copied " + id + " ID and title to clipboard",
-		terminalStatus: "Sent " + id + " ID and title via terminal clipboard",
+		text:    taskReference(task),
+		label:   label,
+		subject: id + " ID and title",
 	}, true
 }
 
-func isRemoteSession(getenv func(string) string) bool {
-	return getenv("SSH_CONNECTION") != "" || getenv("SSH_TTY") != ""
+func copyStatus(subject string, outcome clipboardOutcome) string {
+	large := outcome.size > osc52WarningThreshold
+	size := float64(outcome.size) / 1024
+	switch outcome.channel {
+	case clipboardUnknown:
+		return ""
+	case clipboardNative:
+		return "Copied " + subject + " to clipboard"
+	case clipboardTerminal:
+		if large {
+			return fmt.Sprintf(
+				"Sent %s (%.1f KB) via terminal clipboard — large payloads may truncate",
+				subject,
+				size,
+			)
+		}
+		return "Sent " + subject + " via terminal clipboard"
+	case clipboardFallback:
+		if large {
+			return fmt.Sprintf(
+				"System clipboard unavailable; sent %s (%.1f KB) via terminal clipboard — large payloads may truncate",
+				subject,
+				size,
+			)
+		}
+		return "System clipboard unavailable; sent " + subject + " via terminal clipboard"
+	default:
+		return ""
+	}
 }
 
 // taskReference is the outline payload: the ID a caller pastes into a command,

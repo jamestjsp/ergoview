@@ -2,7 +2,7 @@ package ui
 
 import (
 	"errors"
-	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -22,94 +22,148 @@ var (
 	errClipboardDegraded     = errors.New("native clipboard disabled after timeout")
 )
 
-type clipboardWriteMsg struct {
-	sequence    uint64
-	interaction uint64
-	target      copyTarget
-	err         error
+type clipboardChannel int
+
+const (
+	clipboardUnknown clipboardChannel = iota
+	clipboardNative
+	clipboardTerminal
+	clipboardFallback
+)
+
+type clipboardOutcome struct {
+	channel clipboardChannel
+	size    int
+	err     error
 }
 
-type clipboardQueue struct {
-	writer   func(string) error
-	after    func(time.Duration) <-chan time.Time
-	writeMu  sync.Mutex
-	sequence atomic.Uint64
-	degraded bool
+type clipboardRequestID uint64
+
+type clipboardRequest struct {
+	id      clipboardRequestID
+	command tea.Cmd
 }
 
-func writeSystemClipboard(text string) error {
-	return clipboard.WriteAll(text)
+type clipboardResultMsg struct {
+	request clipboardRequestID
+	outcome clipboardOutcome
+	command tea.Cmd
 }
 
-func newClipboardQueue(writer func(string) error) *clipboardQueue {
-	return &clipboardQueue{
+type clipboardIgnoredMsg struct{}
+
+type clipboardDestination struct {
+	writer       func(string) error
+	after        func(time.Duration) <-chan time.Time
+	terminalOnly bool
+	writeMu      sync.Mutex
+	sequence     atomic.Uint64
+	degraded     bool
+}
+
+func newNativeClipboardDestination(writer func(string) error) *clipboardDestination {
+	return &clipboardDestination{
 		writer: writer,
 		after:  time.After,
 	}
 }
 
-func (q *clipboardQueue) request(target copyTarget, interaction uint64) tea.Cmd {
-	sequence := q.sequence.Add(1)
+func newTerminalClipboardDestination() *clipboardDestination {
+	return &clipboardDestination{
+		after:        time.After,
+		terminalOnly: true,
+	}
+}
+
+func systemClipboardDestination() *clipboardDestination {
+	if isRemoteSession(os.Getenv) {
+		return newTerminalClipboardDestination()
+	}
+	return newNativeClipboardDestination(clipboard.WriteAll)
+}
+
+func (destination *clipboardDestination) copy(text string) clipboardRequest {
+	request := clipboardRequestID(destination.sequence.Add(1))
+	return clipboardRequest{
+		id:      request,
+		command: destination.deliveryCommand(request, text),
+	}
+}
+
+func (destination *clipboardDestination) deliveryCommand(
+	request clipboardRequestID,
+	text string,
+) tea.Cmd {
 	return func() tea.Msg {
-		q.writeMu.Lock()
-		defer q.writeMu.Unlock()
-		if !q.isLatest(sequence) {
-			return clipboardWriteMsg{
-				sequence:    sequence,
-				interaction: interaction,
-				target:      target,
+		if destination.terminalOnly {
+			if !destination.isLatest(request) {
+				return clipboardIgnoredMsg{}
 			}
+			return terminalClipboardResult(request, text, clipboardTerminal, nil)
 		}
-		if q.degraded {
-			return clipboardWriteMsg{
-				sequence:    sequence,
-				interaction: interaction,
-				target:      target,
-				err:         errClipboardDegraded,
-			}
+		destination.writeMu.Lock()
+		defer destination.writeMu.Unlock()
+		if !destination.isLatest(request) {
+			return clipboardIgnoredMsg{}
+		}
+		if destination.degraded {
+			return terminalClipboardResult(
+				request,
+				text,
+				clipboardFallback,
+				errClipboardDegraded,
+			)
 		}
 		result := make(chan error, 1)
 		go func() {
-			result <- q.writer(target.text)
+			result <- destination.writer(text)
 		}()
 		var err error
 		select {
 		case err = <-result:
-		case <-q.after(nativeClipboardTimeout):
+		case <-destination.after(nativeClipboardTimeout):
 			// The writer cannot be canceled. Degrading permanently limits the
 			// residual stale-overwrite risk to this one orphaned native write.
-			q.degraded = true
+			destination.degraded = true
 			err = errClipboardWriteTimeout
 		}
-		return clipboardWriteMsg{
-			sequence:    sequence,
-			interaction: interaction,
-			target:      target,
-			err:         err,
+		if !destination.isLatest(request) {
+			return clipboardIgnoredMsg{}
+		}
+		if err != nil {
+			return terminalClipboardResult(request, text, clipboardFallback, err)
+		}
+		return clipboardResultMsg{
+			request: request,
+			outcome: clipboardOutcome{
+				channel: clipboardNative,
+				size:    len(text),
+			},
 		}
 	}
 }
 
-func (q *clipboardQueue) isLatest(sequence uint64) bool {
-	return q.sequence.Load() == sequence
+func (destination *clipboardDestination) isLatest(request clipboardRequestID) bool {
+	return destination.sequence.Load() == uint64(request)
 }
 
-func terminalClipboardStatus(target copyTarget, systemUnavailable bool) string {
-	if len(target.text) > osc52WarningThreshold {
-		size := float64(len(target.text)) / 1024
-		if systemUnavailable {
-			return fmt.Sprintf(
-				"System clipboard unavailable; sent %.1f KB via terminal — large payloads may truncate",
-				size,
-			)
-		}
-		return fmt.Sprintf(
-			"Sent %.1f KB via terminal clipboard — large payloads may truncate",
-			size,
-		)
+func terminalClipboardResult(
+	request clipboardRequestID,
+	text string,
+	channel clipboardChannel,
+	err error,
+) clipboardResultMsg {
+	return clipboardResultMsg{
+		request: request,
+		outcome: clipboardOutcome{
+			channel: channel,
+			size:    len(text),
+			err:     err,
+		},
+		command: tea.SetClipboard(text),
 	}
-	if systemUnavailable {
-		return "System clipboard unavailable; tried terminal clipboard"
-	}
-	return target.terminalStatus
+}
+
+func isRemoteSession(getenv func(string) string) bool {
+	return getenv("SSH_CONNECTION") != "" || getenv("SSH_TTY") != ""
 }
