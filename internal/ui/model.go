@@ -51,7 +51,10 @@ type row struct {
 }
 
 type copyTarget struct {
-	text, label, status string
+	text           string
+	label          string
+	status         string
+	terminalStatus string
 }
 
 type SnapshotSource interface {
@@ -63,16 +66,20 @@ type CommandRunner interface {
 }
 
 type Options struct {
-	Agent   string
-	NoColor bool
-	Source  SnapshotSource
-	Runner  CommandRunner
+	Agent           string
+	NoColor         bool
+	Source          SnapshotSource
+	Runner          CommandRunner
+	clipboardWriter func(string) error
+	remoteSession   func() bool
 }
 
 type Model struct {
 	snapshot          ergo.Snapshot
 	source            SnapshotSource
 	runner            CommandRunner
+	clipboard         *clipboardQueue
+	remoteSession     bool
 	rows              []row
 	selected          int
 	focus             focus
@@ -94,6 +101,7 @@ type Model struct {
 	detail            viewport.Model
 	helpView          viewport.Model
 	status            string
+	interaction       uint64
 	loadErr           error
 	graphFocusID      string
 	graphFocusHistory []string
@@ -102,18 +110,28 @@ type Model struct {
 
 func New(snapshot ergo.Snapshot, options Options) Model {
 	noColor := options.NoColor || os.Getenv("NO_COLOR") != ""
+	clipboardWriter := options.clipboardWriter
+	if clipboardWriter == nil {
+		clipboardWriter = writeSystemClipboard
+	}
+	remoteSession := options.remoteSession
+	if remoteSession == nil {
+		remoteSession = func() bool { return isRemoteSession(os.Getenv) }
+	}
 	search := textinput.New()
 	search.Prompt = "/ "
 	search.CharLimit = 160
 	model := Model{
-		snapshot: snapshot,
-		source:   options.Source,
-		runner:   options.Runner,
-		dark:     true,
-		noColor:  noColor,
-		agent:    options.Agent,
-		styles:   newStyles(true, noColor),
-		search:   search,
+		snapshot:      snapshot,
+		source:        options.Source,
+		runner:        options.Runner,
+		clipboard:     newClipboardQueue(clipboardWriter),
+		remoteSession: remoteSession(),
+		dark:          true,
+		noColor:       noColor,
+		agent:         options.Agent,
+		styles:        newStyles(true, noColor),
+		search:        search,
 		detail: viewport.New(
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
@@ -141,6 +159,10 @@ func (m Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	switch message.(type) {
+	case tea.KeyPressMsg, tea.MouseClickMsg, tea.MouseWheelMsg:
+		m.interaction++
+	}
 	switch message := message.(type) {
 	case tea.WindowSizeMsg:
 		m.width = message.Width
@@ -192,6 +214,16 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case actionResultMsg:
 		updated, command := m.handleActionResult(message)
 		return updated, command
+	case clipboardWriteMsg:
+		if !m.clipboard.isLatest(message.sequence) || message.interaction != m.interaction {
+			return m, nil
+		}
+		if message.err != nil {
+			m.status = terminalClipboardStatus(message.target, true)
+			return m, tea.SetClipboard(message.target.text)
+		}
+		m.status = message.target.status
+		return m, nil
 	case tea.KeyPressMsg:
 		m.status = ""
 		if m.dialog != nil {
@@ -401,11 +433,14 @@ func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
 
 func (m *Model) copySelection() tea.Cmd {
 	target, ok := m.selectedCopyTarget()
-	if !ok {
+	if !ok || m.clipboard == nil {
 		return nil
 	}
-	m.status = target.status
-	return tea.SetClipboard(target.text)
+	if m.remoteSession {
+		m.status = terminalClipboardStatus(target, false)
+		return tea.SetClipboard(target.text)
+	}
+	return m.clipboard.request(target, m.interaction)
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {
@@ -420,16 +455,22 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 	}
 	if m.copiesDetail() {
 		return copyTarget{
-			text:   m.taskDetailMarkdown(task),
-			label:  label,
-			status: "Copied " + id + " detail to clipboard",
+			text:           m.taskDetailMarkdown(task),
+			label:          label,
+			status:         "Copied " + id + " detail to clipboard",
+			terminalStatus: "Sent " + id + " detail via terminal clipboard",
 		}, true
 	}
 	return copyTarget{
-		text:   taskReference(task),
-		label:  label,
-		status: "Copied " + id + " ID and title to clipboard",
+		text:           taskReference(task),
+		label:          label,
+		status:         "Copied " + id + " ID and title to clipboard",
+		terminalStatus: "Sent " + id + " ID and title via terminal clipboard",
 	}, true
+}
+
+func isRemoteSession(getenv func(string) string) bool {
+	return getenv("SSH_CONNECTION") != "" || getenv("SSH_TTY") != ""
 }
 
 // taskReference is the outline payload: the ID a caller pastes into a command,

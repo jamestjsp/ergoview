@@ -138,7 +138,7 @@ func renderFixtureModel(t *testing.T, noColor bool) Model {
 		t.Fatal(err)
 	}
 	snapshot.Root = "/workspace/product-roadmap"
-	model := New(snapshot, Options{NoColor: noColor})
+	model := New(snapshot, testOptions(Options{NoColor: noColor}))
 	t.Setenv("NO_COLOR", "1")
 	return model
 }
