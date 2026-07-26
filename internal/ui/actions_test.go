@@ -208,7 +208,7 @@ func TestActionSuccessClosesDialogAndFailurePreservesInput(t *testing.T) {
 
 func TestConfiguredAgentIsUsedForClaim(t *testing.T) {
 	runner := &fakeCommander{}
-	model := New(testSnapshot(t), Options{Agent: "codex@host", Runner: runner})
+	model := New(testSnapshot(t), testOptions(Options{Agent: "codex@host", Runner: runner}))
 	model.rebuildRows("BLOCKD")
 	model.openDialog(actionClaim)
 	if len(model.dialog.fields) != 0 || !model.dialog.confirm {

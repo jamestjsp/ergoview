@@ -19,7 +19,7 @@ func TestGraphCanvasRendersEpicTasksStateAndDirection(t *testing.T) {
 			{From: "BRIDGE", To: "CHILD"},
 		},
 	)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("CHILD")
 	model.setView(viewDependencies)
 	model = resize(t, model, 120, 24)
@@ -57,7 +57,7 @@ func TestGraphCanvasUsesVerticalFlowWhenItFitsBetter(t *testing.T) {
 			{From: "B", To: "C"},
 		},
 	)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("B")
 	model.setView(viewDependencies)
 	model = resize(t, model, 52, 30)
@@ -83,7 +83,7 @@ func TestGraphCanvasPreservesNodesAroundLongEdges(t *testing.T) {
 			{From: "A", To: "D"},
 		},
 	)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("D")
 	model.setView(viewDependencies)
 	model = resize(t, model, 120, 28)
@@ -101,7 +101,7 @@ func TestGraphCanvasHandlesUnicodeAndTooSmallTerminal(t *testing.T) {
 		[]graphTaskSpec{{ID: "UNICOD", Title: "Crème 你好"}},
 		nil,
 	)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("UNICOD")
 	model.setView(viewDependencies)
 	model = resize(t, model, 48, 14)

@@ -117,7 +117,7 @@ func TestGraphOverflowExpandsDepth(t *testing.T) {
 		}
 	}
 	snapshot := graphTestSnapshot(t, tasks, dependencies)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("T5")
 	model.setView(viewDependencies)
 	model = resize(t, model, 140, 26)
@@ -170,7 +170,7 @@ func TestGraphFocusResetsWhenFilterRemovesIt(t *testing.T) {
 			{From: "X", To: "Y"},
 		},
 	)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("B")
 	model.setView(viewDependencies)
 	model = resize(t, model, 120, 26)
@@ -232,7 +232,7 @@ func graphInteractionModel(t *testing.T) Model {
 			{From: "C", To: "D"},
 		},
 	)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model.rebuildRows("B")
 	model.setView(viewDependencies)
 	return resize(t, model, 120, 26)

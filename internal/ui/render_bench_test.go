@@ -109,7 +109,7 @@ func benchmarkSnapshot(b *testing.B, taskCount int) ergo.Snapshot {
 
 func benchmarkModel(b *testing.B, taskCount int, view viewMode) Model {
 	b.Helper()
-	model := New(benchmarkSnapshot(b, taskCount), Options{})
+	model := New(benchmarkSnapshot(b, taskCount), testOptions(Options{}))
 	updated, _ := model.Update(tea.WindowSizeMsg{Width: benchWidth, Height: benchHeight})
 	model = updated.(Model)
 	model.setView(view)
@@ -134,7 +134,7 @@ func BenchmarkStartup(b *testing.B) {
 				if err != nil {
 					b.Fatal(err)
 				}
-				New(snapshot, Options{})
+				New(snapshot, testOptions(Options{}))
 			}
 		})
 	}
@@ -213,7 +213,7 @@ func BenchmarkReload(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	model := New(snapshot, Options{Source: repository})
+	model := New(snapshot, testOptions(Options{Source: repository}))
 	updated, _ := model.Update(tea.WindowSizeMsg{Width: benchWidth, Height: benchHeight})
 	model = updated.(Model)
 	b.ReportAllocs()

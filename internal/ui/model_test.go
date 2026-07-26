@@ -242,6 +242,34 @@ func TestCopyWritesSystemClipboardBeforeReportingSuccess(t *testing.T) {
 	}
 }
 
+func TestNewUsesInjectedClipboardWriter(t *testing.T) {
+	var written string
+	options := testOptions(Options{})
+	options.clipboardWriter = func(text string) error {
+		written = text
+		return nil
+	}
+	model := New(testSnapshot(t), options)
+	model.rebuildRows("TOKENS")
+
+	updated, command := model.Update(key("c"))
+	model = updated.(Model)
+	message := command().(clipboardWriteMsg)
+
+	if written != message.target.text {
+		t.Fatalf("injected clipboard received %q, want %q", written, message.target.text)
+	}
+}
+
+func TestCopySelectionWithoutClipboardIsSafe(t *testing.T) {
+	model := Model{snapshot: testSnapshot(t)}
+	model.rebuildRows("TOKENS")
+
+	if command := model.copySelection(); command != nil {
+		t.Fatal("model without a clipboard queue produced a copy command")
+	}
+}
+
 func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 	model := resize(t, testModel(t), 120, 28)
 	model.rebuildRows("TOKENS")
@@ -471,7 +499,7 @@ func TestCopySelectedIDFooterWorksAcrossViewsAndWidths(t *testing.T) {
 }
 
 func TestCopyControlIsUnavailableWithoutSelection(t *testing.T) {
-	model := New(ergo.Snapshot{Root: t.TempDir()}, Options{NoColor: true})
+	model := New(ergo.Snapshot{Root: t.TempDir()}, testOptions(Options{NoColor: true}))
 	model = resize(t, model, 72, 24)
 
 	if strings.Contains(ansi.Strip(model.View().Content), "c copy") {
@@ -738,7 +766,7 @@ func TestLiveReloadSkipsUnchangedSnapshot(t *testing.T) {
 		t.Fatal("unchanged source reported a changed snapshot")
 	}
 
-	model := New(snapshot, Options{Source: source})
+	model := New(snapshot, testOptions(Options{Source: source}))
 	model.status = "keep"
 	updated, _ := model.Update(message)
 	model = updated.(Model)
@@ -756,7 +784,7 @@ func TestFuzzyMatchSupportsUnicode(t *testing.T) {
 
 func TestNoColorRemovesANSIColorSequences(t *testing.T) {
 	snapshot := testSnapshot(t)
-	model := New(snapshot, Options{NoColor: true})
+	model := New(snapshot, testOptions(Options{NoColor: true}))
 	model = resize(t, model, 120, 28)
 	content := model.View().Content
 	if strings.Contains(content, "\x1b[38;") || strings.Contains(content, "\x1b[48;") {
@@ -788,9 +816,12 @@ func (source *stubSnapshotSource) LoadIfChanged() (ergo.Snapshot, bool, error) {
 
 func testModel(t *testing.T) Model {
 	t.Helper()
-	model := New(testSnapshot(t), Options{})
-	model.clipboard = newClipboardQueue(func(string) error { return nil })
-	return model
+	return New(testSnapshot(t), testOptions(Options{}))
+}
+
+func testOptions(options Options) Options {
+	options.clipboardWriter = func(string) error { return nil }
+	return options
 }
 
 func testSnapshot(t *testing.T) ergo.Snapshot {

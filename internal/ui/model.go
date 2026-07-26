@@ -63,10 +63,11 @@ type CommandRunner interface {
 }
 
 type Options struct {
-	Agent   string
-	NoColor bool
-	Source  SnapshotSource
-	Runner  CommandRunner
+	Agent           string
+	NoColor         bool
+	Source          SnapshotSource
+	Runner          CommandRunner
+	clipboardWriter func(string) error
 }
 
 type Model struct {
@@ -103,6 +104,10 @@ type Model struct {
 
 func New(snapshot ergo.Snapshot, options Options) Model {
 	noColor := options.NoColor || os.Getenv("NO_COLOR") != ""
+	clipboardWriter := options.clipboardWriter
+	if clipboardWriter == nil {
+		clipboardWriter = writeSystemClipboard
+	}
 	search := textinput.New()
 	search.Prompt = "/ "
 	search.CharLimit = 160
@@ -110,7 +115,7 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 		snapshot:  snapshot,
 		source:    options.Source,
 		runner:    options.Runner,
-		clipboard: newClipboardQueue(writeSystemClipboard),
+		clipboard: newClipboardQueue(clipboardWriter),
 		dark:      true,
 		noColor:   noColor,
 		agent:     options.Agent,
@@ -413,7 +418,7 @@ func (m *Model) updateFooterMouseClick(message tea.MouseClickMsg) tea.Cmd {
 
 func (m *Model) copySelection() tea.Cmd {
 	target, ok := m.selectedCopyTarget()
-	if !ok {
+	if !ok || m.clipboard == nil {
 		return nil
 	}
 	return m.clipboard.request(target)
