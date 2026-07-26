@@ -51,7 +51,10 @@ type row struct {
 }
 
 type copyTarget struct {
-	text, label, status string
+	text           string
+	label          string
+	status         string
+	terminalStatus string
 }
 
 type SnapshotSource interface {
@@ -68,6 +71,7 @@ type Options struct {
 	Source          SnapshotSource
 	Runner          CommandRunner
 	clipboardWriter func(string) error
+	remoteSession   func() bool
 }
 
 type Model struct {
@@ -75,6 +79,7 @@ type Model struct {
 	source            SnapshotSource
 	runner            CommandRunner
 	clipboard         *clipboardQueue
+	remoteSession     bool
 	rows              []row
 	selected          int
 	focus             focus
@@ -108,19 +113,24 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 	if clipboardWriter == nil {
 		clipboardWriter = writeSystemClipboard
 	}
+	remoteSession := options.remoteSession
+	if remoteSession == nil {
+		remoteSession = func() bool { return isRemoteSession(os.Getenv) }
+	}
 	search := textinput.New()
 	search.Prompt = "/ "
 	search.CharLimit = 160
 	model := Model{
-		snapshot:  snapshot,
-		source:    options.Source,
-		runner:    options.Runner,
-		clipboard: newClipboardQueue(clipboardWriter),
-		dark:      true,
-		noColor:   noColor,
-		agent:     options.Agent,
-		styles:    newStyles(true, noColor),
-		search:    search,
+		snapshot:      snapshot,
+		source:        options.Source,
+		runner:        options.Runner,
+		clipboard:     newClipboardQueue(clipboardWriter),
+		remoteSession: remoteSession(),
+		dark:          true,
+		noColor:       noColor,
+		agent:         options.Agent,
+		styles:        newStyles(true, noColor),
+		search:        search,
 		detail: viewport.New(
 			viewport.WithWidth(40),
 			viewport.WithHeight(10),
@@ -421,6 +431,11 @@ func (m *Model) copySelection() tea.Cmd {
 	if !ok || m.clipboard == nil {
 		return nil
 	}
+	if m.remoteSession {
+		m.clipboard.supersede()
+		m.status = target.terminalStatus
+		return tea.SetClipboard(target.text)
+	}
 	return m.clipboard.request(target)
 }
 
@@ -436,16 +451,22 @@ func (m Model) selectedCopyTarget() (copyTarget, bool) {
 	}
 	if m.copiesDetail() {
 		return copyTarget{
-			text:   m.taskDetailMarkdown(task),
-			label:  label,
-			status: "Copied " + id + " detail to clipboard",
+			text:           m.taskDetailMarkdown(task),
+			label:          label,
+			status:         "Copied " + id + " detail to clipboard",
+			terminalStatus: "Sent " + id + " detail via terminal clipboard",
 		}, true
 	}
 	return copyTarget{
-		text:   taskReference(task),
-		label:  label,
-		status: "Copied " + id + " ID and title to clipboard",
+		text:           taskReference(task),
+		label:          label,
+		status:         "Copied " + id + " ID and title to clipboard",
+		terminalStatus: "Sent " + id + " ID and title via terminal clipboard",
 	}, true
+}
+
+func isRemoteSession(getenv func(string) string) bool {
+	return getenv("SSH_CONNECTION") != "" || getenv("SSH_TTY") != ""
 }
 
 // taskReference is the outline payload: the ID a caller pastes into a command,

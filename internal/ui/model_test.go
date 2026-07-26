@@ -261,6 +261,100 @@ func TestNewUsesInjectedClipboardWriter(t *testing.T) {
 	}
 }
 
+func TestRemoteSessionUsesTerminalClipboard(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		focus focus
+	}{
+		{name: "outline reference", focus: focusOutline},
+		{name: "detail export", focus: focusDetail},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			writes := 0
+			options := testOptions(Options{})
+			options.clipboardWriter = func(string) error {
+				writes++
+				return nil
+			}
+			options.remoteSession = func() bool { return true }
+			model := New(testSnapshot(t), options)
+			model.rebuildRows("TOKENS")
+			model.focus = test.focus
+
+			target, ok := model.selectedCopyTarget()
+			if !ok {
+				t.Fatal("copy target unavailable")
+			}
+			updated, command := model.Update(key("c"))
+			model = updated.(Model)
+
+			if writes != 0 {
+				t.Fatalf("remote copy performed %d native writes", writes)
+			}
+			if got := fmt.Sprint(command()); got != target.text {
+				t.Fatalf("terminal clipboard payload = %q, want %q", got, target.text)
+			}
+			if model.status != target.terminalStatus {
+				t.Fatalf("status = %q, want %q", model.status, target.terminalStatus)
+			}
+		})
+	}
+}
+
+func TestRemoteCopySupersedesPendingNativeWrite(t *testing.T) {
+	writes := 0
+	options := testOptions(Options{})
+	options.clipboardWriter = func(string) error {
+		writes++
+		return nil
+	}
+	model := New(testSnapshot(t), options)
+	model.rebuildRows("TOKENS")
+
+	updated, nativeCommand := model.Update(key("c"))
+	model = updated.(Model)
+	model.remoteSession = true
+	model.rebuildRows("SCHEMA")
+	updated, terminalCommand := model.Update(key("c"))
+	model = updated.(Model)
+
+	task, ok := model.snapshot.Task("SCHEMA")
+	if !ok {
+		t.Fatal("SCHEMA not found")
+	}
+	if got := fmt.Sprint(terminalCommand()); got != taskReference(task) {
+		t.Fatalf("terminal clipboard payload = %q", got)
+	}
+	message := nativeCommand().(clipboardWriteMsg)
+	if writes != 0 {
+		t.Fatalf("superseded native request performed %d writes", writes)
+	}
+	updated, fallback := model.Update(message)
+	model = updated.(Model)
+	if fallback != nil {
+		t.Fatal("superseded native completion produced a fallback")
+	}
+}
+
+func TestRemoteSessionDetection(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		values map[string]string
+		want   bool
+	}{
+		{name: "local", values: map[string]string{}},
+		{name: "connection", values: map[string]string{"SSH_CONNECTION": "client server"}, want: true},
+		{name: "tty", values: map[string]string{"SSH_TTY": "/dev/pts/1"}, want: true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isRemoteSession(func(name string) string { return test.values[name] })
+			if got != test.want {
+				t.Fatalf("isRemoteSession() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestCopySelectionWithoutClipboardIsSafe(t *testing.T) {
 	model := Model{snapshot: testSnapshot(t)}
 	model.rebuildRows("TOKENS")
@@ -821,6 +915,7 @@ func testModel(t *testing.T) Model {
 
 func testOptions(options Options) Options {
 	options.clipboardWriter = func(string) error { return nil }
+	options.remoteSession = func() bool { return false }
 	return options
 }
 

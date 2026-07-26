@@ -47,3 +47,7 @@ func (q *clipboardQueue) request(target copyTarget) tea.Cmd {
 func (q *clipboardQueue) isLatest(sequence uint64) bool {
 	return q.sequence.Load() == sequence
 }
+
+func (q *clipboardQueue) supersede() {
+	q.sequence.Add(1)
+}

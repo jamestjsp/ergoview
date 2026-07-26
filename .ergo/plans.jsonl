@@ -169,3 +169,8 @@
 {"type":"message","ts":"2026-07-26T00:42:45.838762Z","data":{"task_id":"RWCZJK","kind":"done","text":"Added an unexported Options seam with the production writer as the default, routed every test constructor through a no-op writer, and guarded partial Models with no clipboard queue. Verified with go test -race ./internal/ui; no golden or SVG changes.","ts":"2026-07-26T00:42:45.838762Z"}}
 {"type":"unclaim","ts":"2026-07-26T00:42:45.838762Z","data":{"id":"RWCZJK","ts":"2026-07-26T00:42:45.838762Z"}}
 {"type":"state","ts":"2026-07-26T00:42:45.838762Z","data":{"id":"RWCZJK","state":"done","ts":"2026-07-26T00:42:45.838762Z"}}
+{"type":"claim","ts":"2026-07-26T00:43:28.788043Z","data":{"id":"MESSWG","agent_id":"codex@desktop","ts":"2026-07-26T00:43:28.788043Z"}}
+{"type":"state","ts":"2026-07-26T00:43:28.788043Z","data":{"id":"MESSWG","state":"doing","ts":"2026-07-26T00:43:28.788043Z"}}
+{"type":"message","ts":"2026-07-26T00:45:26.737331Z","data":{"task_id":"MESSWG","kind":"done","text":"Detected SSH_CONNECTION or SSH_TTY through an injectable predicate, routed remote copies directly to OSC52 without a native write, and superseded older queued writes before sending. Covered outline, detail, local detection, and stale native requests; go test -race ./internal/ui and go vet ./... pass.","ts":"2026-07-26T00:45:26.737331Z"}}
+{"type":"unclaim","ts":"2026-07-26T00:45:26.737331Z","data":{"id":"MESSWG","ts":"2026-07-26T00:45:26.737331Z"}}
+{"type":"state","ts":"2026-07-26T00:45:26.737331Z","data":{"id":"MESSWG","state":"done","ts":"2026-07-26T00:45:26.737331Z"}}
