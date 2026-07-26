@@ -57,6 +57,12 @@ type copyTarget struct {
 	subject string
 }
 
+type pendingCopy struct {
+	target      copyTarget
+	request     clipboardRequestID
+	interaction uint64
+}
+
 type SnapshotSource interface {
 	LoadIfChanged() (ergo.Snapshot, bool, error)
 }
@@ -100,8 +106,7 @@ type Model struct {
 	helpView          viewport.Model
 	status            string
 	interaction       uint64
-	copyInteraction   uint64
-	pendingCopy       copyTarget
+	pendingCopy       pendingCopy
 	loadErr           error
 	graphFocusID      string
 	graphFocusHistory []string
@@ -210,12 +215,15 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		updated, command := m.handleActionResult(message)
 		return updated, command
 	case clipboardResultMsg:
-		if m.copyInteraction != m.interaction {
-			m.pendingCopy = copyTarget{}
+		if message.request != m.pendingCopy.request {
+			return m, nil
+		}
+		if m.pendingCopy.interaction != m.interaction {
+			m.pendingCopy = pendingCopy{}
 			return m, message.command
 		}
-		target := m.pendingCopy
-		m.pendingCopy = copyTarget{}
+		target := m.pendingCopy.target
+		m.pendingCopy = pendingCopy{}
 		m.status = copyStatus(target.subject, message.outcome)
 		return m, message.command
 	case tea.KeyPressMsg:
@@ -430,9 +438,13 @@ func (m *Model) copySelection() tea.Cmd {
 	if !ok || m.clipboard == nil {
 		return nil
 	}
-	m.pendingCopy = target
-	m.copyInteraction = m.interaction
-	return m.clipboard.copy(target.text)
+	request := m.clipboard.copy(target.text)
+	m.pendingCopy = pendingCopy{
+		target:      target,
+		request:     request.id,
+		interaction: m.interaction,
+	}
+	return request.command
 }
 
 func (m Model) selectedCopyTarget() (copyTarget, bool) {

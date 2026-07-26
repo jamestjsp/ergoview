@@ -36,7 +36,15 @@ type clipboardOutcome struct {
 	err     error
 }
 
+type clipboardRequestID uint64
+
+type clipboardRequest struct {
+	id      clipboardRequestID
+	command tea.Cmd
+}
+
 type clipboardResultMsg struct {
+	request clipboardRequestID
 	outcome clipboardOutcome
 	command tea.Cmd
 }
@@ -70,22 +78,37 @@ func systemClipboardDestination() *clipboardDestination {
 	)
 }
 
-func (destination *clipboardDestination) copy(text string) tea.Cmd {
-	sequence := destination.sequence.Add(1)
+func (destination *clipboardDestination) copy(text string) clipboardRequest {
+	request := clipboardRequestID(destination.sequence.Add(1))
+	return clipboardRequest{
+		id:      request,
+		command: destination.deliveryCommand(request, text),
+	}
+}
+
+func (destination *clipboardDestination) deliveryCommand(
+	request clipboardRequestID,
+	text string,
+) tea.Cmd {
 	return func() tea.Msg {
 		if destination.terminalOnly {
-			if !destination.isLatest(sequence) {
+			if !destination.isLatest(request) {
 				return clipboardIgnoredMsg{}
 			}
-			return terminalClipboardResult(text, clipboardTerminal, nil)
+			return terminalClipboardResult(request, text, clipboardTerminal, nil)
 		}
 		destination.writeMu.Lock()
 		defer destination.writeMu.Unlock()
-		if !destination.isLatest(sequence) {
+		if !destination.isLatest(request) {
 			return clipboardIgnoredMsg{}
 		}
 		if destination.degraded {
-			return terminalClipboardResult(text, clipboardFallback, errClipboardDegraded)
+			return terminalClipboardResult(
+				request,
+				text,
+				clipboardFallback,
+				errClipboardDegraded,
+			)
 		}
 		result := make(chan error, 1)
 		go func() {
@@ -100,13 +123,14 @@ func (destination *clipboardDestination) copy(text string) tea.Cmd {
 			destination.degraded = true
 			err = errClipboardWriteTimeout
 		}
-		if !destination.isLatest(sequence) {
+		if !destination.isLatest(request) {
 			return clipboardIgnoredMsg{}
 		}
 		if err != nil {
-			return terminalClipboardResult(text, clipboardFallback, err)
+			return terminalClipboardResult(request, text, clipboardFallback, err)
 		}
 		return clipboardResultMsg{
+			request: request,
 			outcome: clipboardOutcome{
 				channel: clipboardNative,
 				size:    len(text),
@@ -115,16 +139,18 @@ func (destination *clipboardDestination) copy(text string) tea.Cmd {
 	}
 }
 
-func (destination *clipboardDestination) isLatest(sequence uint64) bool {
-	return destination.sequence.Load() == sequence
+func (destination *clipboardDestination) isLatest(request clipboardRequestID) bool {
+	return destination.sequence.Load() == uint64(request)
 }
 
 func terminalClipboardResult(
+	request clipboardRequestID,
 	text string,
 	channel clipboardChannel,
 	err error,
 ) clipboardResultMsg {
 	return clipboardResultMsg{
+		request: request,
 		outcome: clipboardOutcome{
 			channel: channel,
 			size:    len(text),

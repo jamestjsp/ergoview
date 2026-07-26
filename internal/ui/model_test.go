@@ -224,7 +224,7 @@ func TestCopyWritesSystemClipboardBeforeReportingSuccess(t *testing.T) {
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
-	want := model.pendingCopy.text
+	want := model.pendingCopy.target.text
 	if model.status != "" {
 		t.Fatalf("status reported success before clipboard write: %q", model.status)
 	}
@@ -257,7 +257,7 @@ func TestNewUsesInjectedClipboardWriter(t *testing.T) {
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
-	want := model.pendingCopy.text
+	want := model.pendingCopy.target.text
 	command()
 
 	if written != want {
@@ -350,7 +350,7 @@ func TestCopyFallsBackToTerminalClipboard(t *testing.T) {
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
-	want := model.pendingCopy.text
+	want := model.pendingCopy.target.text
 	message, ok := command().(clipboardResultMsg)
 	if !ok {
 		t.Fatalf("clipboard command message type = %T", message)
@@ -423,7 +423,7 @@ func TestClipboardTimeoutDegradesQueue(t *testing.T) {
 	model.rebuildRows("SCHEMA")
 	updated, secondCommand := model.Update(key("c"))
 	model = updated.(Model)
-	want := model.pendingCopy.text
+	want := model.pendingCopy.target.text
 	secondMessage := secondCommand().(clipboardResultMsg)
 	if !errors.Is(secondMessage.outcome.err, errClipboardDegraded) {
 		t.Fatalf("second clipboard error = %v, want degraded queue", secondMessage.outcome.err)
@@ -449,10 +449,14 @@ func TestLargeTerminalClipboardFallbackWarns(t *testing.T) {
 		text:    strings.Repeat("x", osc52WarningThreshold+1),
 		subject: "TOKENS detail",
 	}
-	model.pendingCopy = target
-	model.copyInteraction = model.interaction
+	request := model.clipboard.copy(target.text)
+	model.pendingCopy = pendingCopy{
+		target:      target,
+		request:     request.id,
+		interaction: model.interaction,
+	}
 
-	message := model.clipboard.copy(target.text)().(clipboardResultMsg)
+	message := request.command().(clipboardResultMsg)
 	updated, fallback := model.Update(message)
 	model = updated.(Model)
 
@@ -539,7 +543,7 @@ func TestTerminalClipboardDeliverySurvivesAnotherInteraction(t *testing.T) {
 
 	updated, command := model.Update(key("c"))
 	model = updated.(Model)
-	want := model.pendingCopy.text
+	want := model.pendingCopy.target.text
 	updated, _ = model.Update(key("j"))
 	model = updated.(Model)
 	message := command().(clipboardResultMsg)
@@ -554,6 +558,51 @@ func TestTerminalClipboardDeliverySurvivesAnotherInteraction(t *testing.T) {
 	}
 	if model.status != "" {
 		t.Fatalf("late terminal result set status %q", model.status)
+	}
+}
+
+func TestLatestCopyResultWinsWhenEarlierResultIsAlreadyQueued(t *testing.T) {
+	options := testOptions(Options{})
+	options.clipboard = newClipboardDestination(func(string) error { return nil }, true)
+	model := resize(t, New(testSnapshot(t), options), 120, 28)
+
+	model.rebuildRows("TOKENS")
+	updated, firstCommand := model.Update(key("c"))
+	model = updated.(Model)
+	older := firstCommand().(clipboardResultMsg)
+
+	model.rebuildRows("SCHEMA")
+	updated, secondCommand := model.Update(key("c"))
+	model = updated.(Model)
+	newer := secondCommand().(clipboardResultMsg)
+
+	updated, terminal := model.Update(older)
+	model = updated.(Model)
+	if terminal != nil {
+		t.Fatal("queued stale result produced a terminal clipboard command")
+	}
+	if model.pendingCopy.request != newer.request {
+		t.Fatal("queued stale result consumed the latest pending copy")
+	}
+	if model.status != "" {
+		t.Fatalf("queued stale result set status %q", model.status)
+	}
+
+	updated, terminal = model.Update(newer)
+	model = updated.(Model)
+	if terminal == nil {
+		t.Fatal("latest result did not produce a terminal clipboard command")
+	}
+	task, ok := model.snapshot.Task("SCHEMA")
+	if !ok {
+		t.Fatal("SCHEMA not found")
+	}
+	want := taskReference(task)
+	if got := fmt.Sprint(terminal()); got != want {
+		t.Fatalf("terminal clipboard payload = %q, want %q", got, want)
+	}
+	if model.status != "Sent SCHEMA ID and title via terminal clipboard" {
+		t.Fatalf("status = %q", model.status)
 	}
 }
 
@@ -1141,7 +1190,7 @@ func completeClipboardCommand(t *testing.T, model Model, command tea.Cmd) (Model
 	if command == nil {
 		t.Fatal("clipboard command is nil")
 	}
-	text := model.pendingCopy.text
+	text := model.pendingCopy.target.text
 	raw := command()
 	message, ok := raw.(clipboardResultMsg)
 	if !ok {
