@@ -68,6 +68,25 @@ func TestRepositoryLoadsCurrentContract(t *testing.T) {
 	}
 }
 
+func TestRepositoryUsesBacklogFilename(t *testing.T) {
+	root := fixtureRepository(t, "backlog.jsonl", "current.jsonl")
+	repository, err := Open(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if filepath.Base(repository.EventPath()) != "backlog.jsonl" {
+		t.Fatalf("event path = %q", repository.EventPath())
+	}
+
+	snapshot, err := repository.Load()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(snapshot.AllTasks()) != 6 {
+		t.Fatalf("task count = %d, want 6", len(snapshot.AllTasks()))
+	}
+}
+
 func TestSnapshotReturnsIndependentValues(t *testing.T) {
 	root := fixtureRepository(t, "plans.jsonl", "current.jsonl")
 	repository, err := Open(root)

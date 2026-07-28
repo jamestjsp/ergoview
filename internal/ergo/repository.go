@@ -43,11 +43,14 @@ func Open(start string) (*Repository, error) {
 	if err != nil {
 		return nil, err
 	}
-	eventPath := filepath.Join(ergoDir, "plans.jsonl")
+	eventPath := filepath.Join(ergoDir, "backlog.jsonl")
 	if _, err := os.Stat(eventPath); errors.Is(err, os.ErrNotExist) {
-		legacyPath := filepath.Join(ergoDir, "events.jsonl")
-		if _, legacyErr := os.Stat(legacyPath); legacyErr == nil {
-			eventPath = legacyPath
+		eventPath = filepath.Join(ergoDir, "plans.jsonl")
+		if _, err := os.Stat(eventPath); errors.Is(err, os.ErrNotExist) {
+			legacyPath := filepath.Join(ergoDir, "events.jsonl")
+			if _, legacyErr := os.Stat(legacyPath); legacyErr == nil {
+				eventPath = legacyPath
+			}
 		}
 	}
 	return &Repository{
