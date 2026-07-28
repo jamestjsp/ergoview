@@ -42,7 +42,7 @@ ev --dir ../my-project --agent codex@workstation
 ev --ergo /opt/tools/ergo
 ```
 
-Ergo View walks upward from the starting path to find `.ergo`. It reads the current `.ergo/plans.jsonl` format and the legacy `.ergo/events.jsonl` filename.
+Ergo View walks upward from the starting path to find `.ergo`. It reads the current `.ergo/backlog.jsonl` format, the older `.ergo/plans.jsonl` format, and the legacy `.ergo/events.jsonl` filename.
 
 ## Views
 
