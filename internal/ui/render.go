@@ -27,6 +27,15 @@ type footerPlacement struct {
 	start, end int
 }
 
+type outlineLayout struct {
+	style      lipgloss.Style
+	innerWidth int
+	paneHeight int
+	start      int
+	end        int
+	firstRowY  int
+}
+
 func (m Model) viewContent() string {
 	if m.width <= 0 || m.height <= 0 {
 		return "Ergo View"
@@ -127,12 +136,34 @@ func (m Model) renderStatus() string {
 }
 
 func (m Model) renderOutlinePane(width int) string {
+	layout := m.outlineLayout(width)
+	lines := []string{m.styles.paneTitle.Render("WORK")}
+	for index := layout.start; index < layout.end; index++ {
+		item := m.rows[index]
+		task, ok := m.snapshot.Task(item.id)
+		if !ok {
+			continue
+		}
+		lines = append(lines, m.renderRow(task, item.depth, layout.innerWidth, index == m.selected))
+	}
+	if len(m.rows) == 0 {
+		lines = append(lines, m.styles.empty.Render("No Ergo tasks yet — press n to create one."))
+	}
+	for len(lines) < layout.paneHeight {
+		lines = append(lines, "")
+	}
+	return layout.style.
+		Width(width).
+		Height(m.contentHeight()).
+		Render(strings.Join(lines, "\n"))
+}
+
+func (m Model) outlineLayout(width int) outlineLayout {
 	style := m.styles.pane
 	if m.focus == focusOutline {
 		style = m.styles.focusPane
 	}
 	innerWidth := max(1, width-style.GetHorizontalFrameSize())
-	lines := []string{m.styles.paneTitle.Render("WORK")}
 	paneHeight := max(1, m.contentHeight()-style.GetVerticalFrameSize())
 	availableRows := max(0, paneHeight-1)
 	start := 0
@@ -140,24 +171,22 @@ func (m Model) renderOutlinePane(width int) string {
 		start = m.selected - availableRows + 1
 	}
 	end := min(len(m.rows), start+availableRows)
-	for index := start; index < end; index++ {
-		item := m.rows[index]
-		task, ok := m.snapshot.Task(item.id)
-		if !ok {
-			continue
-		}
-		lines = append(lines, m.renderRow(task, item.depth, innerWidth, index == m.selected))
+	firstRowY := m.styles.app.GetMarginTop() +
+		m.styles.app.GetBorderTopSize() +
+		m.styles.app.GetPaddingTop() +
+		lipgloss.Height(m.renderHeader()) +
+		style.GetMarginTop() +
+		style.GetBorderTopSize() +
+		style.GetPaddingTop() +
+		lipgloss.Height(m.styles.paneTitle.Render("WORK"))
+	return outlineLayout{
+		style:      style,
+		innerWidth: innerWidth,
+		paneHeight: paneHeight,
+		start:      start,
+		end:        end,
+		firstRowY:  firstRowY,
 	}
-	if len(m.rows) == 0 {
-		lines = append(lines, m.styles.empty.Render("No Ergo tasks yet — press n to create one."))
-	}
-	for len(lines) < paneHeight {
-		lines = append(lines, "")
-	}
-	return style.
-		Width(width).
-		Height(m.contentHeight()).
-		Render(strings.Join(lines, "\n"))
 }
 
 func (m Model) renderRow(task ergo.Task, depth, width int, selected bool) string {

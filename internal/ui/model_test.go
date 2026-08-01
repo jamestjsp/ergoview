@@ -1040,6 +1040,46 @@ func TestMouseClickClearsStatusAboveFooter(t *testing.T) {
 	}
 }
 
+func TestMouseClickSelectsRenderedOutlineRow(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		width    int
+		height   int
+		selected int
+	}{
+		{name: "narrow", width: 72, height: 24},
+		{name: "wide", width: 120, height: 28},
+		{name: "scrolled", width: 72, height: 8, selected: 5},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := resize(t, testModel(t), test.width, test.height)
+			model.selectIndex(test.selected)
+			lines := strings.Split(ansi.Strip(model.View().Content), "\n")
+
+			clicks := 0
+			for y, line := range lines {
+				id := renderedOutlineTaskID(model, line)
+				if id == "" {
+					continue
+				}
+				clicks++
+				updated, _ := model.Update(tea.MouseClickMsg{
+					X:      4,
+					Y:      y,
+					Button: tea.MouseLeft,
+				})
+				clicked := updated.(Model)
+				if selected := clicked.selectedID(); selected != id {
+					t.Fatalf("clicking rendered %s at row %d selected %s", id, y, selected)
+				}
+			}
+			if clicks == 0 {
+				t.Fatal("rendered outline contains no clickable task rows")
+			}
+		})
+	}
+}
+
 func TestBoardKeepsWaitingSeparateFromBlocked(t *testing.T) {
 	model := resize(t, testModel(t), 140, 32)
 	model.setView(viewBoard)
@@ -1287,6 +1327,19 @@ func footerPlacementForAction(t *testing.T, model Model, action footerAction) fo
 	}
 	t.Fatalf("footer action %d not visible:\n%s", action, ansi.Strip(model.View().Content))
 	return footerPlacement{}
+}
+
+func renderedOutlineTaskID(model Model, line string) string {
+	if model.width >= narrowBreakpoint {
+		outlineWidth, _ := model.paneWidths()
+		line = ansi.Truncate(line, outlineWidth, "")
+	}
+	for _, item := range model.rows {
+		if strings.Contains(line, item.id) {
+			return item.id
+		}
+	}
+	return ""
 }
 
 func assertFits(t *testing.T, content string, width, height int) {

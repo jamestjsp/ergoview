@@ -404,13 +404,9 @@ func (m *Model) updateMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	if m.view != viewOverview {
 		return nil
 	}
-	contentY := message.Y - 2
-	if contentY < 1 {
-		return nil
-	}
-	rowIndex := contentY - 1
+	outlineWidth := m.width
 	if m.width >= narrowBreakpoint {
-		outlineWidth, _ := m.paneWidths()
+		outlineWidth, _ = m.paneWidths()
 		if message.X >= outlineWidth {
 			m.focus = focusDetail
 			return nil
@@ -419,8 +415,10 @@ func (m *Model) updateMouseClick(message tea.MouseClickMsg) tea.Cmd {
 	} else if m.focus == focusDetail {
 		return nil
 	}
-	if rowIndex >= 0 && rowIndex < len(m.rows) {
-		m.selectIndex(rowIndex)
+	layout := m.outlineLayout(outlineWidth)
+	rowOffset := message.Y - layout.firstRowY
+	if rowOffset >= 0 && rowOffset < layout.end-layout.start {
+		m.selectIndex(layout.start + rowOffset)
 	}
 	return nil
 }
