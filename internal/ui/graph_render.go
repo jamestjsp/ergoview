@@ -19,6 +19,7 @@ const (
 	graphRoleNode
 	graphRoleEpic
 	graphRoleFocus
+	graphRoleDraft
 	graphRoleReady
 	graphRoleWaiting
 	graphRoleDoing
@@ -476,6 +477,8 @@ func graphRoleStyle(theme styles, role graphCellRole) lipgloss.Style {
 		return theme.graphEpic
 	case graphRoleFocus:
 		return theme.graphFocus
+	case graphRoleDraft:
+		return theme.draft
 	case graphRoleReady:
 		return theme.ready
 	case graphRoleWaiting:
@@ -499,6 +502,8 @@ func graphRoleForTask(task ergo.Task) graphCellRole {
 	switch {
 	case task.Container:
 		return graphRoleEpic
+	case task.State == ergo.StateDraft:
+		return graphRoleDraft
 	case task.State == ergo.StateDoing:
 		return graphRoleDoing
 	case task.State == ergo.StateBlocked:
@@ -507,6 +512,8 @@ func graphRoleForTask(task ergo.Task) graphCellRole {
 		return graphRoleFailed
 	case task.State == ergo.StateDone:
 		return graphRoleDone
+	case task.State == ergo.StateFailed:
+		return graphRoleFailed
 	case task.State == ergo.StateCanceled:
 		return graphRoleCanceled
 	case task.Ready:

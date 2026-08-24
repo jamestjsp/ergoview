@@ -15,6 +15,7 @@ type styles struct {
 	row        lipgloss.Style
 	selected   lipgloss.Style
 	dim        lipgloss.Style
+	draft      lipgloss.Style
 	ready      lipgloss.Style
 	waiting    lipgloss.Style
 	doing      lipgloss.Style
@@ -91,6 +92,7 @@ func newStyles(dark, noColor bool) styles {
 		row:       lipgloss.NewStyle(),
 		selected:  lipgloss.NewStyle().Bold(true).Background(selected),
 		dim:       lipgloss.NewStyle().Faint(true).Foreground(muted),
+		draft:     lipgloss.NewStyle().Bold(true).Foreground(brand),
 		ready:     lipgloss.NewStyle().Bold(true).Foreground(yellow),
 		waiting:   lipgloss.NewStyle().Foreground(muted),
 		doing:     lipgloss.NewStyle().Bold(true).Foreground(cyan),

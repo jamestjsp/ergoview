@@ -1,14 +1,14 @@
  ERGO VIEW  product-roadmap                                              1 Overview  2 Board  3 Dependencies
- 2 ready  1 doing  1 blocked  3 waiting
+ 2 ready  1 doing  1 blocked  3 waiting  1 draft  1 failed
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ READY  2                           DOING  1                           DONE  3                              │
-│  ○ Package ev.exe for Windows  DW…  ◐ Add task editing workflows  DE…  ✓ Define dependency semantics  CO…  │
-│  ○ Polish light and dark themes  …                                     ✓ Load Ergo repositories  DLOAD1    │
-│                                    BLOCKED  1                          ✓ Build board and dependency view…  │
-│ WAITING  3                          ! Configure release signing  RSI…                                      │
-│  · Publish the first public relea…                                    CANCELED  1                          │
-│  · Write install and keyboard gui…                                     × Keep the discarded prototype  T…  │
-│  · Review editing flow with the t…                                                                         │
+│ READY  2                  DRAFT  1                  BLOCKED  1                DONE  3                      │
+│  ○ Package ev.exe for Wi…  ◌ Stage rollout checkli…  ! Configure release sig…  ✓ Define dependency seman…  │
+│  ○ Polish light and dark…                                                      ✓ Load Ergo repositories …  │
+│                           DOING  1                  FAILED  1                  ✓ Build board and depende…  │
+│ WAITING  3                 ◐ Add task editing work…  ✕ Retire rejected signi…                              │
+│  · Publish the first pub…                                                     CANCELED  1                  │
+│  · Write install and key…                                                      × Keep the discarded prot…  │
+│  · Review editing flow w…                                                                                  │
 │                                                                                                            │
 │                                                                                                            │
 │                                                                                                            │

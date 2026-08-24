@@ -36,11 +36,12 @@ func (m Model) renderBoard() string {
 		}
 		content = strings.Join(fitLines(lines, contentHeight, contentWidth), "\n")
 	} else {
-		columnWidth := max(20, contentWidth/3)
+		columnWidth := max(20, contentWidth/4)
 		columns := []string{
 			m.renderBoardColumn(groups[0:2], columnWidth, contentHeight),
 			m.renderBoardColumn(groups[2:4], columnWidth, contentHeight),
-			m.renderBoardColumn(groups[4:6], contentWidth-columnWidth*2, contentHeight),
+			m.renderBoardColumn(groups[4:6], columnWidth, contentHeight),
+			m.renderBoardColumn(groups[6:8], contentWidth-columnWidth*3, contentHeight),
 		}
 		content = lipgloss.JoinHorizontal(lipgloss.Top, columns...)
 	}
@@ -51,8 +52,10 @@ func (m Model) boardGroups() []boardGroup {
 	groups := []boardGroup{
 		{title: "READY", style: m.styles.ready},
 		{title: "WAITING", style: m.styles.waiting},
+		{title: "DRAFT", style: m.styles.draft},
 		{title: "DOING", style: m.styles.doing},
 		{title: "BLOCKED", style: m.styles.blocked},
+		{title: "FAILED", style: m.styles.failed},
 		{title: "DONE", style: m.styles.done},
 		{title: "CANCELED", style: m.styles.canceled},
 	}
@@ -66,14 +69,18 @@ func (m Model) boardGroups() []boardGroup {
 			groups[0].tasks = append(groups[0].tasks, task)
 		case task.Waiting:
 			groups[1].tasks = append(groups[1].tasks, task)
-		case task.State == ergo.StateDoing:
+		case task.State == ergo.StateDraft:
 			groups[2].tasks = append(groups[2].tasks, task)
-		case task.State == ergo.StateBlocked || task.State == ergo.StateError:
+		case task.State == ergo.StateDoing:
 			groups[3].tasks = append(groups[3].tasks, task)
-		case task.State == ergo.StateDone:
+		case task.State == ergo.StateBlocked || task.State == ergo.StateError:
 			groups[4].tasks = append(groups[4].tasks, task)
-		case task.State == ergo.StateCanceled:
+		case task.State == ergo.StateFailed:
 			groups[5].tasks = append(groups[5].tasks, task)
+		case task.State == ergo.StateDone:
+			groups[6].tasks = append(groups[6].tasks, task)
+		case task.State == ergo.StateCanceled:
+			groups[7].tasks = append(groups[7].tasks, task)
 		}
 	}
 	return groups

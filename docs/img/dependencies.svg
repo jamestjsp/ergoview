@@ -31,6 +31,10 @@
     <text x="198.2" y="99.0" fill="#fb7185" fill-opacity="1.00" font-weight="600" textLength="57.4" lengthAdjust="spacingAndGlyphs">blocked</text>
     <text x="272.0" y="99.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">3</text>
     <text x="288.4" y="99.0" fill="#94a3b8" fill-opacity="1.00" font-weight="500" textLength="57.4" lengthAdjust="spacingAndGlyphs">waiting</text>
+    <text x="362.2" y="99.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">1</text>
+    <text x="378.6" y="99.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="41.0" lengthAdjust="spacingAndGlyphs">draft</text>
+    <text x="436.0" y="99.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">1</text>
+    <text x="452.4" y="99.0" fill="#dbe4f0" fill-opacity="1.00" font-weight="400" textLength="49.2" lengthAdjust="spacingAndGlyphs">failed</text>
     <text x="26.0" y="117.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="1016.8" lengthAdjust="spacingAndGlyphs">╭──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮</text>
     <text x="26.0" y="135.0" fill="#3b4964" fill-opacity="1.00" font-weight="400" textLength="8.2" lengthAdjust="spacingAndGlyphs">│</text>
     <text x="42.4" y="135.0" fill="#a78bfa" fill-opacity="1.00" font-weight="700" textLength="82.0" lengthAdjust="spacingAndGlyphs">DEPENDENCY</text>

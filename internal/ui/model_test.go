@@ -1087,17 +1087,59 @@ func TestBoardKeepsWaitingSeparateFromBlocked(t *testing.T) {
 	if len(groups[1].tasks) != 1 || groups[1].tasks[0].ID != "DOCS01" {
 		t.Fatalf("waiting group = %#v", groups[1].tasks)
 	}
-	if len(groups[3].tasks) != 1 || groups[3].tasks[0].ID != "BLOCKD" {
-		t.Fatalf("blocked group = %#v", groups[3].tasks)
+	if len(groups[4].tasks) != 1 || groups[4].tasks[0].ID != "BLOCKD" {
+		t.Fatalf("blocked group = %#v", groups[4].tasks)
 	}
 	content := model.View().Content
 	plain := ansi.Strip(content)
-	for _, heading := range []string{"READY", "WAITING", "DOING", "BLOCKED", "DONE", "CANCELED"} {
+	for _, heading := range []string{"READY", "WAITING", "DRAFT", "DOING", "BLOCKED", "FAILED", "DONE", "CANCELED"} {
 		if !strings.Contains(plain, heading) {
 			t.Fatalf("board missing %s:\n%s", heading, plain)
 		}
 	}
 	assertFits(t, content, 140, 32)
+}
+
+func TestDraftAndFailedRemainDistinctAcrossViewsAndFilters(t *testing.T) {
+	model := renderFixtureModel(t, true)
+	draft, draftOK := model.snapshot.Task("STAGE1")
+	failed, failedOK := model.snapshot.Task("FAIL01")
+	if !draftOK || !failedOK {
+		t.Fatalf("draft/failed tasks missing: draft=%v failed=%v", draftOK, failedOK)
+	}
+	if symbol, label, _ := model.taskPresentation(draft); symbol != "◌" || label != "DRAFT" {
+		t.Fatalf("draft presentation = %q %q", symbol, label)
+	}
+	if symbol, label, _ := model.taskPresentation(failed); symbol != "✕" || label != "FAILED" {
+		t.Fatalf("failed presentation = %q %q", symbol, label)
+	}
+
+	model.filter = filterDraft
+	if !model.taskMatches(draft) || model.taskMatches(failed) {
+		t.Fatal("draft filter did not isolate draft work")
+	}
+	model.filter = filterFailed
+	if model.taskMatches(draft) || !model.taskMatches(failed) {
+		t.Fatal("failed filter did not isolate failed work")
+	}
+	model.filter = filterActive
+	if !model.taskMatches(draft) || model.taskMatches(failed) {
+		t.Fatal("active filter did not distinguish staged from finished work")
+	}
+	model.filter = filterClosed
+	if model.taskMatches(draft) || !model.taskMatches(failed) {
+		t.Fatal("closed filter did not include failed outcomes")
+	}
+
+	model.filter = filterAll
+	model.rebuildRows("")
+	groups := model.boardGroups()
+	if len(groups[2].tasks) != 1 || groups[2].tasks[0].ID != "STAGE1" {
+		t.Fatalf("draft group = %#v", groups[2].tasks)
+	}
+	if len(groups[5].tasks) != 1 || groups[5].tasks[0].ID != "FAIL01" {
+		t.Fatalf("failed group = %#v", groups[5].tasks)
+	}
 }
 
 func TestSearchMatchesBodyAndPreservesSelection(t *testing.T) {

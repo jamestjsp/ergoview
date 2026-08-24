@@ -25,12 +25,24 @@ func (m Model) renderActionMenu() string {
 			m.actionLine("u", "remove dependency"),
 		)
 	} else {
+		primary := []struct {
+			key, label string
+			kind       actionKind
+		}{
+			{key: "c", label: "claim or resume", kind: actionClaim},
+			{key: "d", label: "mark done", kind: actionDone},
+			{key: "f", label: "mark failed", kind: actionFail},
+			{key: "b", label: "mark blocked", kind: actionBlock},
+			{key: "r", label: "return to todo", kind: actionReturn},
+			{key: "x", label: "cancel", kind: actionCancel},
+			{key: "v", label: "record result", kind: actionResult},
+		}
+		for _, item := range primary {
+			if m.actionAvailable(task, item.kind) {
+				lines = append(lines, m.actionLine(item.key, item.label))
+			}
+		}
 		lines = append(lines,
-			m.actionLine("c", "claim or resume"),
-			m.actionLine("d", "mark done"),
-			m.actionLine("b", "mark blocked"),
-			m.actionLine("r", "release to todo"),
-			m.actionLine("x", "cancel"),
 			"",
 			m.actionLine("t", "rename"),
 			m.actionLine("e", "edit body"),
@@ -38,6 +50,9 @@ func (m Model) renderActionMenu() string {
 			m.actionLine("s", "add dependency"),
 			m.actionLine("u", "remove dependency"),
 		)
+	}
+	if m.capabilitiesErr != nil {
+		lines = append(lines, "", m.styles.failed.Render("Ergo capability check failed"))
 	}
 	lines = append(lines, "", m.styles.dim.Render("Esc closes this menu."))
 	panel := m.styles.helpPanel.Render(strings.Join(lines, "\n"))

@@ -118,6 +118,12 @@ func (m Model) renderStatus() string {
 		m.styles.blocked.Render(fmt.Sprintf("%d blocked", summary.Blocked)),
 		m.styles.waiting.Render(fmt.Sprintf("%d waiting", summary.Waiting)),
 	}
+	if summary.Draft > 0 {
+		parts = append(parts, m.styles.draft.Render(fmt.Sprintf("%d draft", summary.Draft)))
+	}
+	if summary.Failed > 0 {
+		parts = append(parts, m.styles.failed.Render(fmt.Sprintf("%d failed", summary.Failed)))
+	}
 	if query := strings.TrimSpace(m.search.Value()); query != "" {
 		parts = append(parts, m.styles.metadata.Render("search:"+query))
 	}
@@ -214,9 +220,18 @@ func (m Model) taskPresentation(task ergo.Task) (string, string, lipgloss.Style)
 	switch {
 	case task.Container:
 		if task.Complete {
-			return "◆", "DONE", m.styles.done
+			switch task.State {
+			case ergo.StateFailed:
+				return "◆", "FAILED", m.styles.failed
+			case ergo.StateCanceled:
+				return "◆", "CANCELED", m.styles.canceled
+			default:
+				return "◆", "DONE", m.styles.done
+			}
 		}
 		return "◇", progressLabel(completedChildren(m.snapshot, task), len(task.Children)), m.styles.brand
+	case task.State == ergo.StateDraft:
+		return "◌", "DRAFT", m.styles.draft
 	case task.State == ergo.StateDoing:
 		return "◐", "DOING", m.styles.doing
 	case task.State == ergo.StateBlocked:
@@ -225,6 +240,8 @@ func (m Model) taskPresentation(task ergo.Task) (string, string, lipgloss.Style)
 		return "⚠", "ERROR", m.styles.failed
 	case task.State == ergo.StateDone:
 		return "✓", "DONE", m.styles.done
+	case task.State == ergo.StateFailed:
+		return "✕", "FAILED", m.styles.failed
 	case task.State == ergo.StateCanceled:
 		return "×", "CANCELED", m.styles.canceled
 	case task.Ready:
@@ -257,7 +274,7 @@ func completedChildren(snapshot ergo.Snapshot, task ergo.Task) int {
 	count := 0
 	for _, childID := range task.Children {
 		child, ok := snapshot.Task(childID)
-		if ok && (child.State == ergo.StateDone || child.State == ergo.StateCanceled) {
+		if ok && (child.State == ergo.StateDone || child.State == ergo.StateFailed || child.State == ergo.StateCanceled) {
 			count++
 		}
 	}

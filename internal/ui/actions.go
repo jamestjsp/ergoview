@@ -2,11 +2,7 @@ package ui
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -24,9 +20,11 @@ const (
 	actionNewPlan    actionKind = "new container plan"
 	actionClaim      actionKind = "claim"
 	actionDone       actionKind = "done"
+	actionFail       actionKind = "fail"
 	actionBlock      actionKind = "block"
 	actionCancel     actionKind = "cancel"
-	actionRelease    actionKind = "release"
+	actionReturn     actionKind = "return to todo"
+	actionResult     actionKind = "record result"
 	actionRename     actionKind = "rename"
 	actionBody       actionKind = "edit body"
 	actionMove       actionKind = "move"
@@ -87,32 +85,44 @@ func (m *Model) openDialog(kind actionKind) {
 		current.fields = []formField{
 			{key: "title", label: "Task title", placeholder: "Add password login", required: true},
 			{key: "parent", label: "Container ID (optional)", value: parent, placeholder: "ABC123"},
-			{key: "body", label: "Markdown body (optional)", placeholder: "## Goal", multiline: true},
 		}
+		if m.capabilities.Draft {
+			current.fields = append(current.fields, formField{key: "draft", label: "Create as draft? (y/N)", placeholder: "y or n"})
+		}
+		current.fields = append(current.fields, formField{key: "body", label: "Markdown body (optional)", placeholder: "## Goal", multiline: true})
 	case actionNewPlan:
-		current.fields = []formField{
-			{key: "title", label: "Container title", placeholder: "Authentication", required: true},
-			{
-				key:         "plan",
-				label:       "Plan Markdown (Ctrl+S to submit)",
-				placeholder: "# Schema\nCreate tables.\n---\n# Endpoints\nAdd login.",
-				required:    true,
-				multiline:   true,
-			},
+		current.fields = []formField{{key: "title", label: "Container title", placeholder: "Authentication", required: true}}
+		if m.capabilities.ModernCreation {
+			current.fields = append(current.fields, formField{key: "body", label: "Container context (optional)", placeholder: "## Goal", multiline: true})
 		}
+		if m.capabilities.Draft {
+			current.fields = append(current.fields, formField{key: "draft", label: "Create children as draft? (y/N)", placeholder: "y or n"})
+		}
+		current.fields = append(current.fields, formField{
+			key:         "plan",
+			label:       "Plan Markdown (Ctrl+S to submit)",
+			placeholder: "# Schema\nCreate tables.\n---\n# Endpoints\nAdd login.",
+			required:    true,
+			multiline:   true,
+		})
 	case actionClaim:
 		if strings.TrimSpace(m.agent) == "" {
 			current.fields = []formField{
 				{key: "agent", label: "Claim identity", placeholder: "model@hostname", required: true},
 			}
 		}
-		current.requireConfirm = task.State == ergo.StateDone || task.State == ergo.StateCanceled
-	case actionDone, actionBlock, actionCancel, actionRelease:
-		current.fields = []formField{
-			{key: "message", label: "Lifecycle message (optional, Ctrl+S to continue)", multiline: true},
-			{key: "result", label: "Result path (optional)", placeholder: "docs/verification.md"},
+		current.requireConfirm = task.State == ergo.StateDone || task.State == ergo.StateFailed || task.State == ergo.StateCanceled
+	case actionDone, actionFail, actionBlock, actionCancel, actionReturn:
+		current.fields = []formField{{key: "message", label: "Lifecycle message (optional, Ctrl+S to continue)", multiline: true}}
+		if !m.capabilities.Journal {
+			current.fields = append(current.fields, formField{key: "result", label: "Result path (optional)", placeholder: "docs/verification.md"})
 		}
 		current.requireConfirm = kind == actionCancel
+	case actionResult:
+		current.fields = []formField{
+			{key: "summary", label: "Result summary", placeholder: "Verified the compatibility suite", required: true},
+			{key: "result", label: "Result file (optional)", placeholder: "docs/verification.md"},
+		}
 	case actionRename:
 		current.fields = []formField{
 			{key: "title", label: "Task title", value: task.Title, required: true},
@@ -198,12 +208,16 @@ func (m *Model) updateActionMenu(message tea.KeyPressMsg) (Model, tea.Cmd) {
 		kind = actionClaim
 	case "d":
 		kind = actionDone
+	case "f":
+		kind = actionFail
 	case "b":
 		kind = actionBlock
 	case "x":
 		kind = actionCancel
 	case "r":
-		kind = actionRelease
+		kind = actionReturn
+	case "v":
+		kind = actionResult
 	case "t":
 		kind = actionRename
 	case "e":
@@ -225,6 +239,9 @@ func (m *Model) updateActionMenu(message tea.KeyPressMsg) (Model, tea.Cmd) {
 			m.actionMenu = false
 			return *m, nil
 		}
+	}
+	if !m.actionAvailable(task, kind) {
+		return *m, nil
 	}
 	m.openDialog(kind)
 	return *m, nil
@@ -285,6 +302,12 @@ func (m *Model) advanceDialog() tea.Cmd {
 	if field.key == "plan" && !strings.Contains(field.value, "# ") {
 		current.err = "Plan Markdown must contain at least one # Title"
 		return nil
+	}
+	if field.key == "draft" {
+		if _, err := parseOptionalBool(field.value); err != nil {
+			current.err = err.Error()
+			return nil
+		}
 	}
 	current.err = ""
 	if current.index+1 < len(current.fields) {
@@ -350,72 +373,93 @@ func executeAction(ctx context.Context, runner CommandRunner, request actionRequ
 	}
 	switch request.kind {
 	case actionNewTask:
-		fields := map[string]string{"title": strings.TrimSpace(value("title"))}
-		if parent := strings.TrimSpace(value("parent")); parent != "" {
-			fields["epic"] = parent
-		}
-		payload, err := json.Marshal(fields)
+		draft, err := parseOptionalBool(value("draft"))
 		if err != nil {
 			return "", err
 		}
-		return runner.Run(ctx, strings.NewReader(value("body")), "new", "task", string(payload))
+		return runner.Execute(ctx, ergo.CreateTask{
+			Title: value("title"), ParentID: value("parent"), Body: value("body"), Draft: draft,
+		})
 	case actionNewPlan:
-		return runPlan(ctx, runner, strings.TrimSpace(value("title")), value("plan"))
+		draft, err := parseOptionalBool(value("draft"))
+		if err != nil {
+			return "", err
+		}
+		return runner.Execute(ctx, ergo.CreateEpic{Title: value("title"), Body: value("body"), Plan: value("plan"), Draft: draft})
 	case actionClaim:
 		agent := strings.TrimSpace(value("agent"))
 		if agent == "" {
 			agent = strings.TrimSpace(request.agent)
 		}
-		if agent == "" {
-			return "", errors.New("claim identity is required")
+		return runner.Execute(ctx, ergo.ClaimTask{TaskID: request.targetID, Agent: agent})
+	case actionDone, actionFail, actionBlock, actionCancel, actionReturn:
+		kinds := map[actionKind]ergo.LifecycleKind{
+			actionDone: ergo.LifecycleDone, actionFail: ergo.LifecycleFail, actionBlock: ergo.LifecycleBlock,
+			actionCancel: ergo.LifecycleCancel, actionReturn: ergo.LifecycleReturn,
 		}
-		return runner.Run(ctx, nil, "claim", request.targetID, "--agent", agent)
-	case actionDone, actionBlock, actionCancel, actionRelease:
-		args := []string{string(request.kind), request.targetID}
-		if message := strings.TrimSpace(value("message")); message != "" {
-			args = append(args, "-m", message)
-		}
-		if result := strings.TrimSpace(value("result")); result != "" {
-			args = append(args, "--result", result)
-		}
-		return runner.Run(ctx, nil, args...)
+		return runner.Execute(ctx, ergo.LifecycleTask{
+			TaskID: request.targetID, Kind: kinds[request.kind], Message: value("message"), ResultPath: value("result"),
+		})
+	case actionResult:
+		return runner.Execute(ctx, ergo.RecordResult{TaskID: request.targetID, Summary: value("summary"), Path: value("result")})
 	case actionRename:
-		return runner.Run(ctx, nil, "title", request.targetID, strings.TrimSpace(value("title")))
+		return runner.Execute(ctx, ergo.RenameTask{TaskID: request.targetID, Title: value("title")})
 	case actionBody:
-		return runner.Run(ctx, strings.NewReader(value("body")), "body", request.targetID)
+		return runner.Execute(ctx, ergo.ReplaceBody{TaskID: request.targetID, Body: value("body")})
 	case actionMove:
-		if parent := strings.TrimSpace(value("parent")); parent != "" {
-			return runner.Run(ctx, nil, "move", request.targetID, parent)
-		}
-		return runner.Run(ctx, nil, "move", request.targetID, "--root")
+		return runner.Execute(ctx, ergo.MoveTask{TaskID: request.targetID, ParentID: value("parent")})
 	case actionSequence:
-		return runner.Run(ctx, nil, "sequence", strings.TrimSpace(value("dependency")), request.targetID)
+		return runner.Execute(ctx, ergo.SetDependency{TaskID: request.targetID, DependencyID: value("dependency")})
 	case actionUnsequence:
-		return runner.Run(ctx, nil, "unsequence", strings.TrimSpace(value("dependency")), request.targetID)
+		return runner.Execute(ctx, ergo.SetDependency{TaskID: request.targetID, DependencyID: value("dependency"), Remove: true})
 	default:
 		return "", fmt.Errorf("unsupported action %q", request.kind)
 	}
 }
 
-func runPlan(ctx context.Context, runner CommandRunner, title, markdown string) (string, error) {
-	file, err := os.CreateTemp("", "ergoview-plan-*.md")
-	if err != nil {
-		return "", err
+func parseOptionalBool(value string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "n", "no", "false":
+		return false, nil
+	case "y", "yes", "true":
+		return true, nil
+	default:
+		return false, fmt.Errorf("enter y or n")
 	}
-	path := file.Name()
-	defer os.Remove(path)
-	if _, err := io.WriteString(file, markdown); err != nil {
-		file.Close()
-		return "", err
+}
+
+func (m Model) actionAvailable(task ergo.Task, kind actionKind) bool {
+	if task.Container {
+		switch kind {
+		case actionRename, actionBody, actionSequence, actionUnsequence:
+			return true
+		default:
+			return false
+		}
 	}
-	if err := file.Close(); err != nil {
-		return "", err
+	finished := task.State == ergo.StateDone || task.State == ergo.StateFailed || task.State == ergo.StateCanceled
+	if finished {
+		return kind == actionClaim || (kind == actionResult && m.capabilities.Journal) ||
+			kind == actionRename || kind == actionBody || kind == actionMove || kind == actionSequence || kind == actionUnsequence
 	}
-	payload, err := json.Marshal(map[string]string{"title": title})
-	if err != nil {
-		return "", err
+	if task.State == ergo.StateDraft {
+		return kind == actionReturn || kind == actionCancel || (kind == actionResult && m.capabilities.Journal) ||
+			kind == actionRename || kind == actionBody || kind == actionMove || kind == actionSequence || kind == actionUnsequence
 	}
-	return runner.Run(ctx, nil, "plan", "--file", path, string(payload))
+	if task.State == ergo.StateError {
+		return kind == actionClaim || (kind == actionResult && m.capabilities.Journal) ||
+			kind == actionRename || kind == actionBody || kind == actionMove || kind == actionSequence || kind == actionUnsequence
+	}
+	if kind == actionFail {
+		return m.capabilities.Fail
+	}
+	if kind == actionResult {
+		return m.capabilities.Journal
+	}
+	if kind == actionClaim && m.capabilities.Open && task.State == ergo.StateBlocked {
+		return false
+	}
+	return true
 }
 
 func (m *Model) handleActionResult(message actionResultMsg) (Model, tea.Cmd) {

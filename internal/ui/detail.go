@@ -160,10 +160,7 @@ func (m Model) taskDetailMarkdown(task ergo.Task) string {
 }
 
 func (m Model) taskDetailState(task ergo.Task) string {
-	if task.Container {
-		if task.Complete {
-			return "DONE"
-		}
+	if task.Container && !task.Complete {
 		return "IN PROGRESS"
 	}
 	_, label, _ := m.taskPresentation(task)
@@ -174,11 +171,13 @@ func (m Model) messageKindStyle(kind string) lipgloss.Style {
 	switch kind {
 	case "done":
 		return m.styles.done
+	case "fail":
+		return m.styles.failed
 	case "block":
 		return m.styles.blocked
 	case "cancel":
 		return m.styles.canceled
-	case "release":
+	case "open", "release":
 		return m.styles.ready
 	case "claim":
 		return m.styles.doing

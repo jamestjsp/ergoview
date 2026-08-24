@@ -239,11 +239,13 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 		return "#c4b5fd", "700", 1
 	case "WORK", "DETAIL", "DEPENDENCY", "FLOW", "PREREQUISITES", "SELECTED", "UNLOCKS", "Description", "Depends", "Progress":
 		return "#a78bfa", "700", 1
+	case "DRAFT":
+		return "#a78bfa", "700", 1
 	case "READY":
 		return "#fbbf24", "700", 1
 	case "DOING":
 		return "#22d3ee", "700", 1
-	case "BLOCKED", "ERROR":
+	case "BLOCKED", "ERROR", "FAILED":
 		return "#fb7185", "700", 1
 	case "DONE":
 		return "#34d399", "600", 1
@@ -253,9 +255,11 @@ func svgRunStyle(text string, line int, activeView string) (fill, weight string,
 		return "#64748b", "500", .8
 	case "○":
 		return "#fbbf24", "700", 1
+	case "◌":
+		return "#a78bfa", "700", 1
 	case "◐":
 		return "#22d3ee", "700", 1
-	case "!", "⚠":
+	case "!", "⚠", "✕":
 		return "#fb7185", "700", 1
 	case "✓":
 		return "#34d399", "700", 1

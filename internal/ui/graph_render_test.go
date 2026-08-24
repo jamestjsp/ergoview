@@ -5,7 +5,18 @@ import (
 	"testing"
 
 	"github.com/charmbracelet/x/ansi"
+
+	"github.com/jamestjsp/ergoview/internal/ergo"
 )
+
+func TestGraphRolesDistinguishDraftAndFailed(t *testing.T) {
+	if role := graphRoleForTask(ergo.Task{State: ergo.StateDraft}); role != graphRoleDraft {
+		t.Fatalf("draft role = %v", role)
+	}
+	if role := graphRoleForTask(ergo.Task{State: ergo.StateFailed}); role != graphRoleFailed {
+		t.Fatalf("failed role = %v", role)
+	}
+}
 
 func TestGraphCanvasRendersEpicTasksStateAndDirection(t *testing.T) {
 	snapshot := graphTestSnapshot(t,

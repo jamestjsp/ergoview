@@ -3,8 +3,6 @@ package ui
 import (
 	"context"
 	"errors"
-	"io"
-	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -14,32 +12,21 @@ import (
 	"github.com/jamestjsp/ergoview/internal/ergo"
 )
 
-type commandCall struct {
-	args  []string
-	input string
-}
-
 type fakeCommander struct {
-	calls  []commandCall
-	output string
-	err    error
-	plan   string
-	path   string
+	operations    []ergo.Operation
+	output        string
+	err           error
+	capabilities  ergo.Capabilities
+	capabilityErr error
 }
 
-func (f *fakeCommander) Run(_ context.Context, input io.Reader, args ...string) (string, error) {
-	body := ""
-	if input != nil {
-		data, _ := io.ReadAll(input)
-		body = string(data)
-	}
-	f.calls = append(f.calls, commandCall{args: append([]string(nil), args...), input: body})
-	if len(args) >= 3 && args[0] == "plan" && args[1] == "--file" {
-		f.path = args[2]
-		data, _ := os.ReadFile(args[2])
-		f.plan = string(data)
-	}
+func (f *fakeCommander) Execute(_ context.Context, operation ergo.Operation) (string, error) {
+	f.operations = append(f.operations, operation)
 	return f.output, f.err
+}
+
+func (f *fakeCommander) Capabilities(context.Context) (ergo.Capabilities, error) {
+	return f.capabilities, f.capabilityErr
 }
 
 func TestExecuteNewTaskUsesOfficialCommandAndStdin(t *testing.T) {
@@ -55,18 +42,12 @@ func TestExecuteNewTaskUsesOfficialCommandAndStdin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if output != "NEW123 - Add login" || len(runner.calls) != 1 {
-		t.Fatalf("output=%q calls=%#v", output, runner.calls)
+	if output != "NEW123 - Add login" || len(runner.operations) != 1 {
+		t.Fatalf("output=%q operations=%#v", output, runner.operations)
 	}
-	call := runner.calls[0]
-	if !reflect.DeepEqual(call.args[:2], []string{"new", "task"}) {
-		t.Fatalf("args = %v", call.args)
-	}
-	if !strings.Contains(call.args[2], `"epic":"EPIC01"`) || !strings.Contains(call.args[2], `"title":"Add login"`) {
-		t.Fatalf("payload = %s", call.args[2])
-	}
-	if call.input != "## Goal\nShip login." {
-		t.Fatalf("stdin = %q", call.input)
+	want := ergo.CreateTask{Title: "Add login", ParentID: "EPIC01", Body: "## Goal\nShip login."}
+	if !reflect.DeepEqual(runner.operations[0], want) {
+		t.Fatalf("operation = %#v, want %#v", runner.operations[0], want)
 	}
 }
 
@@ -74,7 +55,7 @@ func TestExecuteLifecycleAndGraphCommands(t *testing.T) {
 	tests := []struct {
 		name    string
 		request actionRequest
-		want    []string
+		want    ergo.Operation
 	}{
 		{
 			name: "done",
@@ -86,7 +67,7 @@ func TestExecuteLifecycleAndGraphCommands(t *testing.T) {
 					"result":  "docs/result.md",
 				},
 			},
-			want: []string{"done", "TASK01", "-m", "Verified", "--result", "docs/result.md"},
+			want: ergo.LifecycleTask{TaskID: "TASK01", Kind: ergo.LifecycleDone, Message: "Verified", ResultPath: "docs/result.md"},
 		},
 		{
 			name: "sequence",
@@ -95,7 +76,7 @@ func TestExecuteLifecycleAndGraphCommands(t *testing.T) {
 				targetID: "TASK02",
 				values:   map[string]string{"dependency": "TASK01"},
 			},
-			want: []string{"sequence", "TASK01", "TASK02"},
+			want: ergo.SetDependency{TaskID: "TASK02", DependencyID: "TASK01"},
 		},
 		{
 			name: "move root",
@@ -104,7 +85,7 @@ func TestExecuteLifecycleAndGraphCommands(t *testing.T) {
 				targetID: "TASK02",
 				values:   map[string]string{"parent": ""},
 			},
-			want: []string{"move", "TASK02", "--root"},
+			want: ergo.MoveTask{TaskID: "TASK02"},
 		},
 	}
 	for _, test := range tests {
@@ -113,14 +94,14 @@ func TestExecuteLifecycleAndGraphCommands(t *testing.T) {
 			if _, err := executeAction(context.Background(), runner, test.request); err != nil {
 				t.Fatal(err)
 			}
-			if !reflect.DeepEqual(runner.calls[0].args, test.want) {
-				t.Fatalf("args = %v, want %v", runner.calls[0].args, test.want)
+			if !reflect.DeepEqual(runner.operations[0], test.want) {
+				t.Fatalf("operation = %#v, want %#v", runner.operations[0], test.want)
 			}
 		})
 	}
 }
 
-func TestExecutePlanUsesTemporaryMarkdownFile(t *testing.T) {
+func TestExecutePlanPassesMarkdownToErgoAdapter(t *testing.T) {
 	runner := &fakeCommander{}
 	_, err := executeAction(context.Background(), runner, actionRequest{
 		kind: actionNewPlan,
@@ -132,11 +113,9 @@ func TestExecutePlanUsesTemporaryMarkdownFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if runner.plan != "# Schema\nCreate tables." {
-		t.Fatalf("plan = %q", runner.plan)
-	}
-	if _, err := os.Stat(runner.path); !errors.Is(err, os.ErrNotExist) {
-		t.Fatalf("temporary plan remains at %q: %v", runner.path, err)
+	want := ergo.CreateEpic{Title: "Authentication", Plan: "# Schema\nCreate tables."}
+	if !reflect.DeepEqual(runner.operations[0], want) {
+		t.Fatalf("operation = %#v, want %#v", runner.operations[0], want)
 	}
 }
 
@@ -216,8 +195,9 @@ func TestConfiguredAgentIsUsedForClaim(t *testing.T) {
 	}
 	command := model.beginAction()
 	command()
-	if !reflect.DeepEqual(runner.calls[0].args, []string{"claim", "BLOCKD", "--agent", "codex@host"}) {
-		t.Fatalf("args = %v", runner.calls[0].args)
+	want := ergo.ClaimTask{TaskID: "BLOCKD", Agent: "codex@host"}
+	if !reflect.DeepEqual(runner.operations[0], want) {
+		t.Fatalf("operation = %#v, want %#v", runner.operations[0], want)
 	}
 }
 
@@ -236,6 +216,99 @@ func TestContainerActionMenuExcludesLifecycle(t *testing.T) {
 	plain := ansi.Strip(model.View().Content)
 	if strings.Contains(plain, "mark done") || !strings.Contains(plain, "edit body") {
 		t.Fatalf("container action menu:\n%s", plain)
+	}
+}
+
+func TestErgo6CapabilitiesEnableDraftFailureAndResultWorkflows(t *testing.T) {
+	capabilities := ergo.Capabilities{Major: 6, ModernCreation: true, Journal: true, Draft: true, Fail: true, Open: true}
+	runner := &fakeCommander{capabilities: capabilities}
+	model := New(testSnapshot(t), testOptions(Options{Runner: runner, Capabilities: &capabilities}))
+
+	model.openDialog(actionNewTask)
+	var keys []string
+	for _, field := range model.dialog.fields {
+		keys = append(keys, field.key)
+	}
+	if !reflect.DeepEqual(keys, []string{"title", "parent", "draft", "body"}) {
+		t.Fatalf("new task fields = %v", keys)
+	}
+
+	_, err := executeAction(context.Background(), runner, actionRequest{
+		kind: actionNewTask,
+		values: map[string]string{
+			"title": "Stage rollout", "draft": "yes", "body": "## Goal\nPrepare safely.",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantTask := ergo.CreateTask{Title: "Stage rollout", Body: "## Goal\nPrepare safely.", Draft: true}
+	if !reflect.DeepEqual(runner.operations[len(runner.operations)-1], wantTask) {
+		t.Fatalf("operation = %#v, want %#v", runner.operations[len(runner.operations)-1], wantTask)
+	}
+
+	_, err = executeAction(context.Background(), runner, actionRequest{
+		kind: actionResult, targetID: "TASK01",
+		values: map[string]string{"summary": "Verified compatibility", "result": "docs/proof.md"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantResult := ergo.RecordResult{TaskID: "TASK01", Summary: "Verified compatibility", Path: "docs/proof.md"}
+	if !reflect.DeepEqual(runner.operations[len(runner.operations)-1], wantResult) {
+		t.Fatalf("operation = %#v, want %#v", runner.operations[len(runner.operations)-1], wantResult)
+	}
+}
+
+func TestActionMenusMatchDraftAndFailedSemantics(t *testing.T) {
+	capabilities := ergo.Capabilities{Major: 6, ModernCreation: true, Journal: true, Draft: true, Fail: true, Open: true}
+	model := renderFixtureModel(t, true)
+	model.capabilities = capabilities
+	model.capabilitiesReady = true
+	model = resize(t, model, 120, 30)
+
+	model.rebuildRows("STAGE1")
+	model.actionMenu = true
+	draftMenu := ansi.Strip(model.View().Content)
+	for _, expected := range []string{"return to todo", "cancel", "record result"} {
+		if !strings.Contains(draftMenu, expected) {
+			t.Fatalf("draft menu missing %q:\n%s", expected, draftMenu)
+		}
+	}
+	for _, absent := range []string{"claim or resume", "mark done", "mark failed", "mark blocked"} {
+		if strings.Contains(draftMenu, absent) {
+			t.Fatalf("draft menu contains %q:\n%s", absent, draftMenu)
+		}
+	}
+
+	model.actionMenu = false
+	model.rebuildRows("FAIL01")
+	model.actionMenu = true
+	failedMenu := ansi.Strip(model.View().Content)
+	for _, expected := range []string{"claim or resume", "record result"} {
+		if !strings.Contains(failedMenu, expected) {
+			t.Fatalf("failed menu missing %q:\n%s", expected, failedMenu)
+		}
+	}
+	for _, absent := range []string{"mark done", "return to todo", "cancel"} {
+		if strings.Contains(failedMenu, absent) {
+			t.Fatalf("failed menu contains %q:\n%s", absent, failedMenu)
+		}
+	}
+}
+
+func TestCapabilitiesLoadWithoutBlockingReadOnlyStartup(t *testing.T) {
+	want := ergo.Capabilities{Major: 6, ModernCreation: true, Journal: true, Draft: true, Fail: true, Open: true}
+	runner := &fakeCommander{capabilities: want}
+	model := New(testSnapshot(t), testOptions(Options{Runner: runner}))
+	if model.capabilitiesReady {
+		t.Fatal("capabilities unexpectedly loaded synchronously")
+	}
+	message := loadCapabilities(runner)()
+	updated, _ := model.Update(message)
+	model = updated.(Model)
+	if !model.capabilitiesReady || model.capabilities != want {
+		t.Fatalf("capabilities = %#v ready=%v", model.capabilities, model.capabilitiesReady)
 	}
 }
 

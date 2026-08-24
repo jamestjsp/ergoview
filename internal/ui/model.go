@@ -3,7 +3,6 @@ package ui
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -41,8 +40,10 @@ const (
 	filterActive
 	filterReady
 	filterWaiting
+	filterDraft
 	filterDoing
 	filterBlocked
+	filterFailed
 	filterClosed
 )
 
@@ -71,21 +72,26 @@ type SnapshotSource interface {
 }
 
 type CommandRunner interface {
-	Run(context.Context, io.Reader, ...string) (string, error)
+	Execute(context.Context, ergo.Operation) (string, error)
+	Capabilities(context.Context) (ergo.Capabilities, error)
 }
 
 type Options struct {
-	Agent     string
-	NoColor   bool
-	Source    SnapshotSource
-	Runner    CommandRunner
-	clipboard *clipboardDestination
+	Agent        string
+	NoColor      bool
+	Source       SnapshotSource
+	Runner       CommandRunner
+	Capabilities *ergo.Capabilities
+	clipboard    *clipboardDestination
 }
 
 type Model struct {
 	snapshot          ergo.Snapshot
 	source            SnapshotSource
 	runner            CommandRunner
+	capabilities      ergo.Capabilities
+	capabilitiesReady bool
+	capabilitiesErr   error
 	clipboard         *clipboardDestination
 	rows              []row
 	selected          int
@@ -145,6 +151,10 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 		),
 		graphScope: graphScopeAdaptive,
 	}
+	if options.Capabilities != nil {
+		model.capabilities = *options.Capabilities
+		model.capabilitiesReady = true
+	}
 	model.detail.SoftWrap = true
 	model.helpView.SoftWrap = true
 	model.rebuildRows("")
@@ -157,6 +167,9 @@ func (m Model) Init() tea.Cmd {
 	commands := []tea.Cmd{tea.RequestBackgroundColor}
 	if m.source != nil {
 		commands = append(commands, nextReload())
+	}
+	if m.runner != nil && !m.capabilitiesReady {
+		commands = append(commands, loadCapabilities(m.runner))
 	}
 	return tea.Batch(commands...)
 }
@@ -212,6 +225,13 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.syncDetail()
 			m.pendingSelection = ""
 			m.status = "Reloaded external Ergo changes"
+		}
+		return m, nil
+	case capabilitiesLoadedMsg:
+		m.capabilitiesErr = message.err
+		if message.err == nil {
+			m.capabilities = message.capabilities
+			m.capabilitiesReady = true
 		}
 		return m, nil
 	case actionResultMsg:
@@ -633,17 +653,21 @@ func (m Model) taskMatches(task ergo.Task) bool {
 	case filterAll:
 		return true
 	case filterActive:
-		return task.State != ergo.StateDone && task.State != ergo.StateCanceled
+		return task.State != ergo.StateDone && task.State != ergo.StateFailed && task.State != ergo.StateCanceled
 	case filterReady:
 		return task.Ready
 	case filterWaiting:
 		return task.Waiting
+	case filterDraft:
+		return task.State == ergo.StateDraft
 	case filterDoing:
 		return task.State == ergo.StateDoing
 	case filterBlocked:
 		return task.State == ergo.StateBlocked || task.State == ergo.StateError
+	case filterFailed:
+		return task.State == ergo.StateFailed
 	case filterClosed:
-		return task.State == ergo.StateDone || task.State == ergo.StateCanceled
+		return task.State == ergo.StateDone || task.State == ergo.StateFailed || task.State == ergo.StateCanceled
 	default:
 		return true
 	}
@@ -672,21 +696,25 @@ func (m *Model) sortRowsForBoard() {
 	order := func(task ergo.Task) int {
 		switch {
 		case task.Container:
-			return 7
+			return 9
 		case task.Ready:
 			return 0
 		case task.Waiting:
 			return 1
-		case task.State == ergo.StateDoing:
+		case task.State == ergo.StateDraft:
 			return 2
-		case task.State == ergo.StateBlocked || task.State == ergo.StateError:
+		case task.State == ergo.StateDoing:
 			return 3
-		case task.State == ergo.StateDone:
+		case task.State == ergo.StateBlocked || task.State == ergo.StateError:
 			return 4
-		case task.State == ergo.StateCanceled:
+		case task.State == ergo.StateFailed:
 			return 5
-		default:
+		case task.State == ergo.StateDone:
 			return 6
+		case task.State == ergo.StateCanceled:
+			return 7
+		default:
+			return 8
 		}
 	}
 	sort.SliceStable(m.rows, func(left, right int) bool {
@@ -755,10 +783,14 @@ func (m Model) filterLabel() string {
 		return "ready"
 	case filterWaiting:
 		return "waiting"
+	case filterDraft:
+		return "draft"
 	case filterDoing:
 		return "doing"
 	case filterBlocked:
 		return "blocked"
+	case filterFailed:
+		return "failed"
 	case filterClosed:
 		return "closed"
 	default:
@@ -839,6 +871,11 @@ type snapshotLoadedMsg struct {
 	err      error
 }
 
+type capabilitiesLoadedMsg struct {
+	capabilities ergo.Capabilities
+	err          error
+}
+
 func nextReload() tea.Cmd {
 	return tea.Tick(time.Second, func(value time.Time) tea.Msg {
 		return reloadTickMsg(value)
@@ -849,5 +886,14 @@ func loadSnapshot(source SnapshotSource) tea.Cmd {
 	return func() tea.Msg {
 		snapshot, changed, err := source.LoadIfChanged()
 		return snapshotLoadedMsg{snapshot: snapshot, changed: changed, err: err}
+	}
+}
+
+func loadCapabilities(runner CommandRunner) tea.Cmd {
+	return func() tea.Msg {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		capabilities, err := runner.Capabilities(ctx)
+		return capabilitiesLoadedMsg{capabilities: capabilities, err: err}
 	}
 }
