@@ -230,3 +230,6 @@
 {"type":"state","ts":"2026-08-24T13:08:46.551705Z","data":{"id":"G5ADQV","state":"done","ts":"2026-08-24T13:08:46.551705Z"}}
 {"type":"claim","ts":"2026-08-24T13:09:02.501812Z","data":{"id":"UHFF6J","agent_id":"codex@local","ts":"2026-08-24T13:09:02.501812Z"}}
 {"type":"state","ts":"2026-08-24T13:09:02.501812Z","data":{"id":"UHFF6J","state":"doing","ts":"2026-08-24T13:09:02.501812Z"}}
+{"type":"message","ts":"2026-08-24T13:28:02.048422Z","data":{"task_id":"UHFF6J","kind":"done","text":"Published Ergo View v0.5.0 from green Linux, macOS, and Windows CI. Verified all six release archive checksums and the macOS ARM64 binary, upgraded and executed the Homebrew cask at 0.5.0, and confirmed WinGet PR #423309 is open with validation in progress.","ts":"2026-08-24T13:28:02.048422Z"}}
+{"type":"unclaim","ts":"2026-08-24T13:28:02.048422Z","data":{"id":"UHFF6J","ts":"2026-08-24T13:28:02.048422Z"}}
+{"type":"state","ts":"2026-08-24T13:28:02.048422Z","data":{"id":"UHFF6J","state":"done","ts":"2026-08-24T13:28:02.048422Z"}}
