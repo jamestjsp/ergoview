@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -172,11 +173,25 @@ func TestRunnerHelperProcess(t *testing.T) {
 		}
 	}
 	args := os.Args[separator:]
+	if slices.Contains(args, "version") {
+		if version := os.Getenv("ERGO_VIEW_HELPER_VERSION"); version != "" {
+			fmt.Printf("ergo %s", version)
+			os.Exit(0)
+		}
+	}
+	if slices.Contains(args, "--help") {
+		if help := os.Getenv("ERGO_VIEW_HELPER_HELP"); help != "" {
+			fmt.Print(help)
+			os.Exit(0)
+		}
+	}
 	for _, arg := range args {
 		switch arg {
 		case "fail":
-			fmt.Fprint(os.Stderr, "rejected by ergo")
-			os.Exit(2)
+			if os.Getenv("ERGO_VIEW_HELPER_ALLOW_FAIL") != "1" {
+				fmt.Fprint(os.Stderr, "rejected by ergo")
+				os.Exit(2)
+			}
 		case "sleep":
 			time.Sleep(10 * time.Second)
 		}

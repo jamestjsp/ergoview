@@ -15,10 +15,11 @@ import (
 type commandBuilder func(context.Context, string, ...string) *exec.Cmd
 
 type Runner struct {
-	binary *binaryPath
-	root   string
-	agent  string
-	build  commandBuilder
+	binary  *binaryPath
+	dialect *dialectCache
+	root    string
+	agent   string
+	build   commandBuilder
 }
 
 type binaryPath struct {
@@ -34,10 +35,11 @@ func NewRunner(binary, root, agent string) *Runner {
 		binary = "ergo"
 	}
 	return &Runner{
-		binary: &binaryPath{name: binary, lookPath: exec.LookPath},
-		root:   root,
-		agent:  agent,
-		build:  exec.CommandContext,
+		binary:  &binaryPath{name: binary, lookPath: exec.LookPath},
+		dialect: &dialectCache{},
+		root:    root,
+		agent:   agent,
+		build:   exec.CommandContext,
 	}
 }
 
@@ -48,11 +50,19 @@ func (r *Runner) WithAgent(agent string) *Runner {
 }
 
 func (r *Runner) Run(ctx context.Context, input io.Reader, args ...string) (string, error) {
+	return r.run(ctx, input, true, args...)
+}
+
+func (r *Runner) runCommand(ctx context.Context, input io.Reader, args ...string) (string, error) {
+	return r.run(ctx, input, false, args...)
+}
+
+func (r *Runner) run(ctx context.Context, input io.Reader, includeDefaultAgent bool, args ...string) (string, error) {
 	if len(args) == 0 {
 		return "", errors.New("ergo command required")
 	}
 	commandArgs := []string{"--dir", r.root}
-	if r.agent != "" {
+	if includeDefaultAgent && r.agent != "" {
 		commandArgs = append(commandArgs, "--agent", r.agent)
 	}
 	commandArgs = append(commandArgs, args...)
