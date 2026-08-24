@@ -7,11 +7,13 @@ import (
 )
 
 type repositoryState struct {
-	source   fileState
-	offset   int64
-	lines    int
-	openLine bool
-	replay   replayState
+	source        fileState
+	journalSource fileState
+	offset        int64
+	lines         int
+	openLine      bool
+	replay        replayState
+	journal       []journalEntry
 }
 
 type fileState struct {
@@ -39,7 +41,11 @@ func (r *Repository) LoadIfChanged() (Snapshot, bool, error) {
 	if err != nil {
 		return Snapshot{}, false, err
 	}
-	if r.state != nil && observed.equal(r.state.source) {
+	observedJournal, err := statFile(r.journalPath)
+	if err != nil {
+		return Snapshot{}, false, err
+	}
+	if r.state != nil && observed.equal(r.state.source) && observedJournal.equal(r.state.journalSource) {
 		return Snapshot{}, false, nil
 	}
 
@@ -52,43 +58,49 @@ func (r *Repository) LoadIfChanged() (Snapshot, bool, error) {
 		return snapshot, true, nil
 	}
 
-	file, current, err := openFile(r.eventPath)
-	if err != nil {
-		return Snapshot{}, false, err
-	}
-	if file != nil {
-		defer file.Close()
-	}
-	if current.equal(r.state.source) {
-		return Snapshot{}, false, nil
-	}
-	if r.state.openLine || !canReplayAppend(r.state.source, current) {
-		snapshot, state, err := r.loadFullFrom(file, current)
+	if !observed.equal(r.state.source) {
+		if r.state.openLine || !canReplayAppend(r.state.source, observed) {
+			snapshot, state, err := r.loadFull()
+			if err != nil {
+				return Snapshot{}, false, err
+			}
+			r.state = state
+			return snapshot, true, nil
+		}
+		file, current, err := openFile(r.eventPath)
 		if err != nil {
 			return Snapshot{}, false, err
 		}
-		r.state = state
-		return snapshot, true, nil
+		if file != nil {
+			defer file.Close()
+		}
+		read, err := readBacklogRange(file, r.eventPath, r.state.offset, current.info.Size(), r.state.lines)
+		if err != nil {
+			r.state = nil
+			return Snapshot{}, false, err
+		}
+		if read.snapshot != nil {
+			r.state = nil
+			return Snapshot{}, false, fmt.Errorf("%s: snapshot cannot be appended to an existing backlog", r.eventPath)
+		}
+		if err := replayInto(&r.state.replay, read.events); err != nil {
+			r.state = nil
+			return Snapshot{}, false, fmt.Errorf("%s: %w", r.eventPath, err)
+		}
+		r.state.source = current
+		r.state.offset = read.offset
+		r.state.lines = read.lines
+		r.state.openLine = read.openLine
 	}
-
-	events, offset, lines, openLine, err := readEventRange(
-		file,
-		r.eventPath,
-		r.state.offset,
-		current.info.Size(),
-		r.state.lines,
-	)
-	if err != nil {
-		return Snapshot{}, false, err
+	if !observedJournal.equal(r.state.journalSource) {
+		journal, source, err := readJournalFile(r.journalPath)
+		if err != nil {
+			r.state = nil
+			return Snapshot{}, false, err
+		}
+		r.state.journal = journal
+		r.state.journalSource = source
 	}
-	if err := replayInto(&r.state.replay, events); err != nil {
-		r.state = nil
-		return Snapshot{}, false, fmt.Errorf("%s: %w", r.eventPath, err)
-	}
-	r.state.source = current
-	r.state.offset = offset
-	r.state.lines = lines
-	r.state.openLine = openLine
 	return r.snapshot(), true, nil
 }
 
@@ -104,29 +116,36 @@ func (r *Repository) loadFull() (Snapshot, *repositoryState, error) {
 }
 
 func (r *Repository) loadFullFrom(file *os.File, source fileState) (Snapshot, *repositoryState, error) {
-	state := &repositoryState{
-		source: source,
-		replay: newReplayState(),
-	}
+	state := &repositoryState{source: source, replay: newReplayState()}
 	if source.exists {
-		events, offset, lines, openLine, err := readEventRange(file, r.eventPath, 0, source.info.Size(), 0)
+		read, err := readBacklogRange(file, r.eventPath, 0, source.info.Size(), 0)
 		if err != nil {
 			return Snapshot{}, nil, err
 		}
-		if err := replayInto(&state.replay, events); err != nil {
+		if read.snapshot != nil {
+			state.replay = *read.snapshot
+		}
+		if err := replayInto(&state.replay, read.events); err != nil {
 			return Snapshot{}, nil, fmt.Errorf("%s: %w", r.eventPath, err)
 		}
-		state.offset = offset
-		state.lines = lines
-		state.openLine = openLine
+		state.offset = read.offset
+		state.lines = read.lines
+		state.openLine = read.openLine
 	}
+	journal, journalSource, err := readJournalFile(r.journalPath)
+	if err != nil {
+		return Snapshot{}, nil, err
+	}
+	state.journal = journal
+	state.journalSource = journalSource
 	snapshot := buildSnapshot(
 		r.root,
 		r.ergoDir,
 		r.eventPath,
-		source.version(),
+		combinedVersion(source, journalSource),
 		state.replay.tasks,
 		state.replay.deps,
+		state.journal,
 	)
 	return snapshot, state, nil
 }
@@ -136,10 +155,15 @@ func (r *Repository) snapshot() Snapshot {
 		r.root,
 		r.ergoDir,
 		r.eventPath,
-		r.state.source.version(),
+		combinedVersion(r.state.source, r.state.journalSource),
 		r.state.replay.tasks,
 		r.state.replay.deps,
+		r.state.journal,
 	)
+}
+
+func combinedVersion(backlog, journal fileState) string {
+	return backlog.version() + "|" + journal.version()
 }
 
 func statFile(path string) (fileState, error) {

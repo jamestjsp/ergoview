@@ -1,12 +1,9 @@
 package ergo
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"sort"
@@ -20,11 +17,12 @@ const maxEventLineBytes = 10 * 1024 * 1024
 var errEventLineTooLong = errors.New("event line too long")
 
 type Repository struct {
-	root      string
-	ergoDir   string
-	eventPath string
-	mu        sync.Mutex
-	state     *repositoryState
+	root        string
+	ergoDir     string
+	eventPath   string
+	journalPath string
+	mu          sync.Mutex
+	state       *repositoryState
 }
 
 func Open(start string) (*Repository, error) {
@@ -54,9 +52,10 @@ func Open(start string) (*Repository, error) {
 		}
 	}
 	return &Repository{
-		root:      filepath.Dir(ergoDir),
-		ergoDir:   ergoDir,
-		eventPath: eventPath,
+		root:        filepath.Dir(ergoDir),
+		ergoDir:     ergoDir,
+		eventPath:   eventPath,
+		journalPath: filepath.Join(ergoDir, "journal.jsonl"),
 	}, nil
 }
 
@@ -113,98 +112,6 @@ type taskRecord struct {
 	tombstoned      bool
 }
 
-func readEvents(path string) ([]event, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	defer file.Close()
-	info, err := file.Stat()
-	if err != nil {
-		return nil, err
-	}
-	events, _, _, _, err := readEventRange(file, path, 0, info.Size(), 0)
-	return events, err
-}
-
-func readEventRange(file *os.File, path string, offset, size int64, lines int) ([]event, int64, int, bool, error) {
-	reader := bufio.NewReaderSize(io.NewSectionReader(file, offset, size-offset), 64*1024)
-	events := make([]event, 0)
-	committedOffset := offset
-	committedLines := lines
-
-	for {
-		lineStart := committedOffset
-		data, err := readBoundedLine(reader, maxEventLineBytes)
-		if errors.Is(err, errEventLineTooLong) {
-			return nil, offset, lines, false, fmt.Errorf("%s: event line exceeds %d bytes", path, maxEventLineBytes)
-		}
-		if len(data) == 0 && errors.Is(err, io.EOF) {
-			return events, committedOffset, committedLines, false, nil
-		}
-
-		lineNumber := committedLines + 1
-		parsed, present, decodeErr := decodeEventLine(path, lineNumber, data)
-		if decodeErr != nil {
-			if errors.Is(err, io.EOF) {
-				return events, lineStart, committedLines, false, nil
-			}
-			return nil, offset, lines, false, decodeErr
-		}
-		if present {
-			events = append(events, parsed)
-		}
-		committedOffset += int64(len(data))
-		committedLines++
-
-		if err == nil {
-			continue
-		}
-		if errors.Is(err, io.EOF) {
-			return events, committedOffset, committedLines, true, nil
-		}
-		return nil, offset, lines, false, err
-	}
-}
-
-func readBoundedLine(reader *bufio.Reader, limit int) ([]byte, error) {
-	var line []byte
-	for {
-		fragment, err := reader.ReadSlice('\n')
-		contentBytes := len(line) + len(fragment)
-		if err == nil && len(fragment) > 0 && fragment[len(fragment)-1] == '\n' {
-			contentBytes--
-		}
-		if contentBytes > limit {
-			return nil, errEventLineTooLong
-		}
-		line = append(line, fragment...)
-		if errors.Is(err, bufio.ErrBufferFull) {
-			continue
-		}
-		return line, err
-	}
-}
-
-func decodeEventLine(path string, lineNumber int, data []byte) (event, bool, error) {
-	trimmed := bytes.TrimSpace(data)
-	if len(trimmed) == 0 {
-		return event{}, false, nil
-	}
-	var parsed event
-	if err := json.Unmarshal(trimmed, &parsed); err != nil {
-		snippet := string(trimmed)
-		if len(snippet) > 160 {
-			snippet = snippet[:160] + "…"
-		}
-		return event{}, false, fmt.Errorf("%s:%d: invalid JSON in events log: %s (%w)", path, lineNumber, snippet, err)
-	}
-	return parsed, true, nil
-}
-
 func replay(events []event) (map[string]*taskRecord, map[string]map[string]struct{}, error) {
 	state := newReplayState()
 	if err := replayInto(&state, events); err != nil {
@@ -233,6 +140,12 @@ func replayInto(state *replayState, events []event) error {
 	tombstones := state.tombstones
 
 	for _, current := range events {
+		if current.Type == "" {
+			return fmt.Errorf("event kind is empty")
+		}
+		if _, err := parseTime(current.TS); err != nil {
+			return fmt.Errorf("%s event has invalid timestamp: %w", current.Type, err)
+		}
 		switch current.Type {
 		case "new_task", "new_epic":
 			var data struct {
@@ -252,6 +165,9 @@ func replayInto(state *replayState, events []event) error {
 			}
 			if _, exists := tasks[data.ID]; exists {
 				return fmt.Errorf("duplicate task id %s", data.ID)
+			}
+			if !isReadableState(data.State) {
+				return fmt.Errorf("task %s has invalid state %q", data.ID, data.State)
 			}
 			createdAt, err := parseTime(data.CreatedAt)
 			if err != nil {
@@ -280,6 +196,9 @@ func replayInto(state *replayState, events []event) error {
 			if err := json.Unmarshal(current.Data, &data); err != nil {
 				return err
 			}
+			if !isReadableState(data.State) {
+				return fmt.Errorf("task %s has invalid state %q", data.ID, data.State)
+			}
 			if task := tasks[data.ID]; task != nil {
 				timestamp, err := parseTime(data.TS)
 				if err != nil {
@@ -287,7 +206,7 @@ func replayInto(state *replayState, events []event) error {
 				}
 				task.State = data.State
 				task.UpdatedAt = later(task.UpdatedAt, timestamp)
-				if data.State == StateTodo || data.State == StateDone || data.State == StateCanceled {
+				if data.State == StateTodo || data.State == StateDraft || isFinishedState(data.State) {
 					task.ClaimedBy = ""
 				}
 			}
@@ -452,12 +371,16 @@ func replayInto(state *replayState, events []event) error {
 			for fromID := range deps {
 				delete(deps[fromID], data.ID)
 			}
+		default:
+			return fmt.Errorf("unknown event kind %q", current.Type)
 		}
 	}
 	return nil
 }
 
-func buildSnapshot(root, ergoDir, eventPath, version string, records map[string]*taskRecord, deps map[string]map[string]struct{}) Snapshot {
+func buildSnapshot(root, ergoDir, eventPath, version string, sourceRecords map[string]*taskRecord, deps map[string]map[string]struct{}, journal []journalEntry) Snapshot {
+	records := cloneTaskRecords(sourceRecords)
+	hydrateJournalEvidence(records, journal)
 	children := map[string][]string{}
 	reverseDeps := map[string][]string{}
 	for _, task := range records {
@@ -490,11 +413,25 @@ func buildSnapshot(root, ergoDir, eventPath, version string, records map[string]
 			continue
 		}
 		task.Complete = len(task.Children) > 0
+		hasFailed := false
+		hasCanceled := false
 		for _, childID := range task.Children {
 			child := records[childID]
-			if child == nil || (child.State != StateDone && child.State != StateCanceled) {
+			if child == nil || !isFinishedState(child.State) {
 				task.Complete = false
 				break
+			}
+			hasFailed = hasFailed || child.State == StateFailed
+			hasCanceled = hasCanceled || child.State == StateCanceled
+		}
+		if task.Complete {
+			switch {
+			case hasFailed:
+				task.State = StateFailed
+			case hasCanceled:
+				task.State = StateCanceled
+			default:
+				task.State = StateDone
 			}
 		}
 	}
@@ -506,7 +443,7 @@ func buildSnapshot(root, ergoDir, eventPath, version string, records map[string]
 		if task.Container {
 			return task.Complete
 		}
-		return task.State == StateDone || task.State == StateCanceled
+		return isFinishedState(task.State)
 	}
 	for _, task := range records {
 		if task.Container || task.State != StateTodo {
@@ -558,6 +495,8 @@ func buildSnapshot(root, ergoDir, eventPath, version string, records map[string]
 		}
 		snapshot.Summary.Total++
 		switch task.State {
+		case StateDraft:
+			snapshot.Summary.Draft++
 		case StateTodo:
 			if task.Ready {
 				snapshot.Summary.Ready++
@@ -572,12 +511,31 @@ func buildSnapshot(root, ergoDir, eventPath, version string, records map[string]
 			snapshot.Summary.Error++
 		case StateDone:
 			snapshot.Summary.Done++
+		case StateFailed:
+			snapshot.Summary.Failed++
 		case StateCanceled:
 			snapshot.Summary.Canceled++
 		}
 	}
 	sort.Strings(snapshot.Roots)
 	return snapshot
+}
+
+func cloneTaskRecords(records map[string]*taskRecord) map[string]*taskRecord {
+	cloned := make(map[string]*taskRecord, len(records))
+	for id, record := range records {
+		if record == nil {
+			continue
+		}
+		copy := *record
+		copy.Task = cloneTask(record.Task)
+		cloned[id] = &copy
+	}
+	return cloned
+}
+
+func isFinishedState(state State) bool {
+	return state == StateDone || state == StateFailed || state == StateCanceled
 }
 
 func parseTime(value string) (time.Time, error) {

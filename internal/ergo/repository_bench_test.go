@@ -309,7 +309,7 @@ func BenchmarkRepositoryParseOnly(b *testing.B) {
 		if err != nil {
 			b.Fatal(err)
 		}
-		buildSnapshot("root", ".ergo", "plans.jsonl", "v", tasks, deps)
+		buildSnapshot("root", ".ergo", "plans.jsonl", "v", tasks, deps, nil)
 	}
 }
 

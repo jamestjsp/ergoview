@@ -5,11 +5,13 @@ import "time"
 type State string
 
 const (
+	StateDraft    State = "draft"
 	StateTodo     State = "todo"
 	StateDoing    State = "doing"
 	StateBlocked  State = "blocked"
 	StateError    State = "error"
 	StateDone     State = "done"
+	StateFailed   State = "failed"
 	StateCanceled State = "canceled"
 )
 
@@ -51,12 +53,14 @@ type Task struct {
 
 type Summary struct {
 	Containers int
+	Draft      int
 	Ready      int
 	Waiting    int
 	Doing      int
 	Blocked    int
 	Error      int
 	Done       int
+	Failed     int
 	Canceled   int
 	Total      int
 }

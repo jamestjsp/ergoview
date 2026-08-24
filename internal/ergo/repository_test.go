@@ -232,7 +232,7 @@ func TestRepositoryLoadIfChangedSkipsUnchangedLog(t *testing.T) {
 	if changed {
 		t.Fatal("unchanged event log reported a reload")
 	}
-	if repository.state.offset == 0 || repository.state.source.version() != initial.Version {
+	if repository.state.offset == 0 || combinedVersion(repository.state.source, repository.state.journalSource) != initial.Version {
 		t.Fatalf("repository state was not retained: %#v", repository.state)
 	}
 }
