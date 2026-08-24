@@ -33,7 +33,7 @@ func run(args []string) error {
 	)
 	flags.StringVar(&start, "dir", "", "Ergo repository, child path, or .ergo directory")
 	flags.StringVar(&agent, "agent", "", "claim identity used by task actions")
-	flags.StringVar(&ergoBinary, "ergo", "ergo", "path to the Ergo 3 executable")
+	flags.StringVar(&ergoBinary, "ergo", "ergo", "path to the Ergo executable")
 	flags.BoolVar(&showHelp, "help", false, "show help")
 	flags.BoolVar(&showHelp, "h", false, "show help")
 	flags.BoolVar(&showVersion, "version", false, "show version")
@@ -77,7 +77,7 @@ Usage:
 Flags:
   --dir path        Ergo repository, child path, or .ergo directory
   --agent identity  claim identity used by task actions
-  --ergo path       path to the Ergo 3 executable (default: ergo)
+  --ergo path       path to the Ergo executable (default: ergo)
   -h, --help        show help
   --version         show version
 `)

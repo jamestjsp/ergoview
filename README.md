@@ -1,12 +1,12 @@
 # Ergo View
 
-Ergo View is a responsive terminal companion for [Ergo](https://github.com/sandover/ergo). It turns local epics, tasks, dependencies, and activity into a fast Bubble Tea interface while keeping Ergo itself in charge of every change.
+Ergo View is a responsive terminal companion for [Ergo](https://github.com/sandover/ergo). It turns local epics, tasks, dependencies, journals, and activity into a fast Bubble Tea interface while keeping Ergo itself in charge of every change.
 
 ![Ergo View overview](docs/img/overview.svg)
 
 ## Install
 
-Ergo View requires Go 1.25.8 or newer and Ergo 3 available as `ergo` on `PATH`.
+Ergo View requires Go 1.25.8 or newer when building from source and a released Ergo 1–6 executable available as `ergo` on `PATH` for task actions. Ergo 6 is recommended for draft staging, failed outcomes, and independent results.
 
 On macOS with Homebrew:
 
@@ -42,7 +42,7 @@ ev --dir ../my-project --agent codex@workstation
 ev --ergo /opt/tools/ergo
 ```
 
-Ergo View walks upward from the starting path to find `.ergo`. It reads the current `.ergo/backlog.jsonl` format, the older `.ergo/plans.jsonl` format, and the legacy `.ergo/events.jsonl` filename.
+Ergo View walks upward from the starting path to find `.ergo`. It reads the current `.ergo/backlog.jsonl` format, the older `.ergo/plans.jsonl` format, the legacy `.ergo/events.jsonl` filename, and the shared `.ergo/journal.jsonl` introduced by Ergo 5. Released standalone events, transaction batches, and compacted snapshots are all supported.
 
 ## Views
 
@@ -62,15 +62,17 @@ In the dependency graph, use the arrow keys or `h`/`j`/`k`/`l` to move spatially
 
 ## Interact
 
-Press `n` to create a task, `p` to create a container plan, or `a` to open actions for the selected task. Task actions can:
+Press `n` to create a task, `p` to create an epic plan, or `a` to open actions for the selected task. Ergo View detects the selected Ergo executable once and maps each action to that release generation. Task actions can:
 
+- create ordinary work or stage draft work with Ergo 6;
 - claim or resume work;
-- mark work done, blocked, canceled, or released;
+- mark work done, failed, blocked, canceled, or return it to todo;
+- record independent results with Ergo 5 and newer;
 - rename or replace the Markdown body;
-- move a task into a container or back to the root;
+- move a task into an epic or back to the root;
 - add or remove a dependency.
 
-Lifecycle actions accept an optional message and result path. Multiline fields use `Ctrl+S` to continue. Destructive or state-reopening operations ask for confirmation.
+Lifecycle actions accept an optional message. Ergo 1–4 can attach a result path during a lifecycle action; Ergo 5–6 expose results as their own summary-and-optional-file action. Multiline fields use `Ctrl+S` to continue. Destructive or state-reopening operations ask for confirmation.
 
 Ergo View never edits the event log. It invokes the official Ergo CLI for every mutation, then reloads the resulting snapshot. Errors stay in the dialog so input is not lost.
 
@@ -100,17 +102,30 @@ Mouse selection and wheel scrolling are also supported.
 
 ## Compatibility
 
-Ergo View targets the Ergo 3 command and event model. Reading is tolerant of a partially written final event, but malformed complete events are reported with their file and line number. Set `NO_COLOR=1` for terminals that should not receive color styling.
+Ergo View preserves released Ergo storage and command compatibility by generation:
 
-The executable is named `ev` on macOS and Linux and `ev.exe` on Windows. Release builds cover AMD64 and ARM64 for all three operating systems.
+- **Ergo 1–3:** `events.jsonl` and `plans.jsonl`, standalone events, JSON task creation, `plan`, and `release`.
+- **Ergo 4:** `backlog.jsonl`, atomic transaction records, compacted snapshot blocks, title-based task and epic creation, and `release`.
+- **Ergo 5:** the shared journal, failed outcomes, explicit `result` records, and `release`.
+- **Ergo 6:** draft staging and `open` in place of `release`.
+
+Draft work is visible but never ready. Failed work is finished and releases dependencies while remaining distinct from successful completion. A completed epic is failed when any child failed, canceled when none failed and at least one child was canceled, and done otherwise.
+
+Reading tolerates one partially written final backlog or journal record. Malformed complete records, unsupported versions, invalid compacted-snapshot ordering, and checksum mismatches are reported with their source path and line. Ergo View never rewrites these files.
+
+Set `NO_COLOR=1` for terminals that should not receive color styling. The executable is named `ev` on macOS and Linux and `ev.exe` on Windows. Release builds cover AMD64 and ARM64 for all three operating systems.
 
 ## Develop
 
 ```sh
+git clone --recurse-submodules https://github.com/jamestjsp/ergoview.git
+cd ergoview
 go test -race ./...
 go vet ./...
 go build -o ev ./cmd/ev
 ```
+
+Existing clones can initialize the pinned upstream compatibility reference with `git submodule update --init`. The `upstream/ergo` submodule points to the original `sandover/ergo` v6.0.0 release and supplies immutable released-major fixtures for regression tests; Ergo View does not import Ergo internals or ship the submodule in binary archives.
 
 Render fixtures and documentation images are reproducible:
 
@@ -118,7 +133,7 @@ Render fixtures and documentation images are reproducible:
 UPDATE_GOLDEN=1 go test ./internal/ui -run 'TestRenderSnapshots|TestDocumentationScreenshots'
 ```
 
-The data adapter is read-only and UI-independent. The action layer exposes narrow Ergo operations and delegates command execution to a runner, which keeps workflows testable without duplicating Ergo's mutation rules.
+The data adapter is read-only and UI-independent. The action layer exposes intent-level Ergo operations and owns CLI-generation adaptation, which keeps the UI version-neutral without duplicating Ergo's mutation rules.
 
 ## License
 
