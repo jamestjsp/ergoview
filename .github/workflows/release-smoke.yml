@@ -1,0 +1,85 @@
+name: Released Windows executable smoke test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - codex/test-windows-release
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify and execute the published v0.5.0 binary
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $archive = Join-Path $env:RUNNER_TEMP 'ergoview.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'ergoview-release'
+          $emptyDirectory = Join-Path $env:RUNNER_TEMP 'ergoview-empty'
+          New-Item -ItemType Directory -Path $emptyDirectory | Out-Null
+          Invoke-WebRequest 'https://github.com/jamestjsp/ergoview/releases/download/v0.5.0/ergoview_0.5.0_windows_amd64.zip' -OutFile $archive
+          $expectedHash = 'bb6277a88d5ce76fbcb72ffda2cc3313509761443581187e08ae5fee77a8925a'
+          $actualHash = (Get-FileHash $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($actualHash -ne $expectedHash) { throw "Archive checksum mismatch: $actualHash" }
+          Expand-Archive $archive -DestinationPath $destination
+          $exe = Join-Path $destination 'ev.exe'
+          if (!(Test-Path $exe)) { throw 'Archive is missing root ev.exe' }
+          Write-Host "Verified published x64 archive SHA256: $actualHash"
+
+          function Invoke-Executable([string[]] $Arguments) {
+            $info = [System.Diagnostics.ProcessStartInfo]::new()
+            $info.FileName = $exe
+            $info.WorkingDirectory = $emptyDirectory
+            $info.UseShellExecute = $false
+            $info.RedirectStandardOutput = $true
+            $info.RedirectStandardError = $true
+            foreach ($argument in $Arguments) { $info.ArgumentList.Add($argument) }
+            $process = [System.Diagnostics.Process]::new()
+            $process.StartInfo = $info
+            try {
+              [void] $process.Start()
+              $stdout = $process.StandardOutput.ReadToEndAsync()
+              $stderr = $process.StandardError.ReadToEndAsync()
+              if (!$process.WaitForExit(10000)) {
+                $process.Kill($true)
+                $process.WaitForExit()
+                throw "ev.exe $Arguments timed out after 10 seconds"
+              }
+              $result = [PSCustomObject]@{
+                Arguments = $Arguments
+                ExitCode = $process.ExitCode
+                Stdout = $stdout.GetAwaiter().GetResult().Trim()
+                Stderr = $stderr.GetAwaiter().GetResult().Trim()
+              }
+              Write-Host ($result | ConvertTo-Json -Compress)
+              return $result
+            } finally {
+              $process.Dispose()
+            }
+          }
+
+          $version = Invoke-Executable -Arguments @('--version')
+          if ($version.ExitCode -ne 0 -or $version.Stdout -ne '0.5.0' -or $version.Stderr -ne '') {
+            throw 'Released binary failed --version verification'
+          }
+          $help = Invoke-Executable -Arguments @('--help')
+          if ($help.ExitCode -ne 0 -or $help.Stdout -notmatch 'Usage:' -or $help.Stderr -ne '') {
+            throw 'Released binary failed --help verification'
+          }
+          $default = Invoke-Executable -Arguments @()
+          if ($default.ExitCode -ne 1 -or $default.Stderr -eq '') {
+            throw 'Expected a diagnostic and exit code 1 outside an Ergo repository'
+          }
+          @'
+          ## v0.5.0 Windows x64 release test
+          - Published ZIP hash verified against the merged WinGet manifest.
+          - Actual released ev.exe --version printed 0.5.0 and exited 0.
+          - Actual released ev.exe --help printed usage and exited 0.
+          - No arguments in an empty directory produced a diagnostic and exited 1.
+          - This tests the portable x64 executable; it does not test WinGet installation, ARM64, or interactive TUI behavior.
+          '@ >> $env:GITHUB_STEP_SUMMARY
