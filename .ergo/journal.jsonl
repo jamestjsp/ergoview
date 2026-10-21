@@ -1,0 +1,13 @@
+{"version":1,"task_id":"SQR7VU","kind":"created","at":"2026-10-21T02:07:41.962702Z"}
+{"version":1,"task_id":"KKEVZU","kind":"created","at":"2026-10-21T02:07:41.962717Z"}
+{"version":1,"task_id":"HEJN24","kind":"created","at":"2026-10-21T02:07:41.962719Z"}
+{"version":1,"task_id":"EBAE4J","kind":"created","at":"2026-10-21T02:07:41.962721Z"}
+{"version":1,"task_id":"6QP53E","kind":"created","at":"2026-10-21T02:07:41.962723Z"}
+{"version":1,"task_id":"KKEVZU","kind":"claim","at":"2026-10-21T02:07:46.643287Z","agent":"coordinator@claude"}
+{"version":1,"task_id":"HEJN24","kind":"claim","at":"2026-10-21T02:07:46.659156Z","agent":"coordinator@claude"}
+{"version":1,"task_id":"EBAE4J","kind":"claim","at":"2026-10-21T02:07:46.67841Z","agent":"coordinator@claude"}
+{"version":1,"task_id":"6QP53E","kind":"claim","at":"2026-10-21T02:07:46.694471Z","agent":"coordinator@claude"}
+{"version":1,"task_id":"KKEVZU","kind":"done","at":"2026-10-21T02:12:35.351531Z","agent":"coordinator@claude","text":"Header shows ⎇ branch via .git/HEAD (worktree/submodule/detached aware), refreshed each reload tick. Tests in vcs and ui."}
+{"version":1,"task_id":"HEJN24","kind":"done","at":"2026-10-21T02:12:35.364614Z","agent":"coordinator@claude","text":"Detail + copied markdown show created/updated, message and result times; zero times omitted. Tests incl. loaded backlog."}
+{"version":1,"task_id":"EBAE4J","kind":"done","at":"2026-10-21T02:12:35.379732Z","agent":"coordinator@claude","text":"Depends on/Unlocks show linked task state in detail and markdown. Tests + goldens."}
+{"version":1,"task_id":"6QP53E","kind":"done","at":"2026-10-21T02:12:35.396181Z","agent":"coordinator@claude","text":"s cycles default/newest/oldest; applied in rebuildRows (tree siblings, board groups) under search/filters. Dependency graph layout unchanged."}
