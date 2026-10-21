@@ -85,6 +85,9 @@ func (m Model) renderHeader() string {
 		root = m.snapshot.Root
 	}
 	left := m.styles.brand.Render("ERGO VIEW") + "  " + m.styles.path.Render(root)
+	if m.branch != "" {
+		left += "  " + m.styles.metadata.Render("⎇ "+m.branch)
+	}
 	labels := []string{"1 Overview", "2 Board", "3 Dependencies"}
 	if m.width < narrowBreakpoint {
 		labels = []string{"1 Outline", "2 Board", "3 Deps"}
@@ -132,6 +135,9 @@ func (m Model) renderStatus() string {
 	}
 	if m.containerFilter != "" {
 		parts = append(parts, m.styles.metadata.Render("container:"+m.containerFilter))
+	}
+	if m.sort != sortDefault {
+		parts = append(parts, m.styles.metadata.Render("sort:"+m.sortLabel()))
 	}
 	if m.loadErr != nil {
 		parts = append(parts, m.styles.failed.Render("reload failed: "+m.loadErr.Error()))
@@ -415,6 +421,7 @@ func (m Model) footerItems() []footerItem {
 		m.footerItem("/", "search"),
 		m.footerItem("f", "filter"),
 		m.footerItem("e", "epic"),
+		m.footerItem("s", "sort"),
 		m.footerItem("?", "help"),
 		m.footerItem("q", "quit"),
 	}
@@ -462,6 +469,7 @@ func (m Model) helpContent() string {
 		m.styles.helpKey.Render("/") + "              fuzzy search",
 		m.styles.helpKey.Render("f") + "              cycle state filter",
 		m.styles.helpKey.Render("e") + "              focus selected container",
+		m.styles.helpKey.Render("s") + "              cycle created-time sort",
 		m.styles.helpKey.Render("x") + "              clear search and filters",
 		m.styles.helpKey.Render("c") + "              copy selected ID and title, or focused detail",
 		m.styles.helpKey.Render("a") + "              selected task actions",

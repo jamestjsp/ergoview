@@ -4,21 +4,22 @@
 │ WORK                                                   ││ DETAIL                                                                         │
 │ ◆ Graph foundations                       DONE  CORE01 ││ DOING  DEDIT1                                                                  │
 │   ✓ Define dependency semantics           DONE  CORECH ││ Add task editing workflows                                                     │
-│ ◇ Desktop experience                  ▰▰▱▱ 2/4  DESK01 ││ claimed by codex@workstation                                                   │
-│   ◐ Add task editin… DOING  DEDIT1  @codex@workstation ││ container  Desktop experience  DESK01                                          │
-│   ✓ Load Ergo repositories                DONE  DLOAD1 ││                                                                                │
-│   ✓ Build board and dependency views      DONE  DVIEW1 ││ Depends on                                                                     │
-│   ○ Package ev.exe for Windows           READY  DWIN01 ││   ← Graph foundations  CORE01                                                  │
-│ ✕ Retire rejected signing path          FAILED  FAIL01 ││   ← Load Ergo repositories  DLOAD1                                             │
-│ · Publish the first public release     WAITING  LAUNCH ││   ← Build board and dependency views  DVIEW1                                   │
-│ ◇ Release readiness                   ▱▱▱▱ 0/3  REL001 ││                                                                                │
-│   · Write install and keyboard guide   WAITING  RDOCS1 ││ Unlocks                                                                        │
-│   ! Configure release signing          BLOCKED  RSIGN1 ││   → Write install and keyboard guide  RDOCS1                                   │
-│   ○ Polish light and dark themes         READY  RTHEME ││   → Review editing flow with the team  TREVW1                                  │
-│ ◌ Stage rollout checklist                DRAFT  STAGE1 ││                                                                                │
-│ ◇ Team adoption                       ▰▰▱▱ 1/2  TEAM01 ││ Description                                                                    │
-│   × Keep the discarded prototype      CANCELED  TDEMO1 ││                                                                                │
-│   · Review editing flow with the team  WAITING  TREVW1 ││   ## Goal                                                                      │
+│ ◇ Desktop experience                  ▰▰▱▱ 2/4  DESK01 ││ created 2026-07-23 10:03                                                       │
+│   ◐ Add task editin… DOING  DEDIT1  @codex@workstation ││ claimed by codex@workstation                                                   │
+│   ✓ Load Ergo repositories                DONE  DLOAD1 ││ container  Desktop experience  DESK01                                          │
+│   ✓ Build board and dependency views      DONE  DVIEW1 ││                                                                                │
+│   ○ Package ev.exe for Windows           READY  DWIN01 ││ Depends on                                                                     │
+│ ✕ Retire rejected signing path          FAILED  FAIL01 ││   ← ◆ DONE  Graph foundations  CORE01                                          │
+│ · Publish the first public release     WAITING  LAUNCH ││   ← ✓ DONE  Load Ergo repositories  DLOAD1                                     │
+│ ◇ Release readiness                   ▱▱▱▱ 0/3  REL001 ││   ← ✓ DONE  Build board and dependency views  DVIEW1                           │
+│   · Write install and keyboard guide   WAITING  RDOCS1 ││                                                                                │
+│   ! Configure release signing          BLOCKED  RSIGN1 ││ Unlocks                                                                        │
+│   ○ Polish light and dark themes         READY  RTHEME ││   → · WAITING  Write install and keyboard guide  RDOCS1                        │
+│ ◌ Stage rollout checklist                DRAFT  STAGE1 ││   → · WAITING  Review editing flow with the team  TREVW1                       │
+│ ◇ Team adoption                       ▰▰▱▱ 1/2  TEAM01 ││                                                                                │
+│   × Keep the discarded prototype      CANCELED  TDEMO1 ││ Description                                                                    │
+│   · Review editing flow with the team  WAITING  TREVW1 ││                                                                                │
+│                                                        ││   ## Goal                                                                      │
 │                                                        ││                                                                                │
 │                                                        ││   Create fast, safe task editing without bypassing Ergo.                       │
 │                                                        ││                                                                                │
@@ -27,6 +28,5 @@
 │                                                        ││   • Claim, complete, block, and return work to todo from the TUI.              │
 │                                                        ││   • Keep command errors in context.                                            │
 │                                                        ││   • Reload the selected task after every mutation.                             │
-│                                                        ││                                                                                │
 ╰────────────────────────────────────────────────────────╯╰────────────────────────────────────────────────────────────────────────────────╯
  j/k move  ·  tab pane  ·  enter detail  ·  x clear  ·  a actions  ·  c copy ref  ·  n/p new  ·  1/2/3 views  ·  / search  ·  f filter

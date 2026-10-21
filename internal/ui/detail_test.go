@@ -3,6 +3,7 @@ package ui
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/x/ansi"
 
@@ -88,6 +89,87 @@ func TestTaskDetailMarkdownOmitsEmptySections(t *testing.T) {
 	for _, present := range []string{"**CANCELED**", "`EMPTY`", "# Empty task"} {
 		if !strings.Contains(markdown, present) {
 			t.Fatalf("markdown missing %q:\n%s", present, markdown)
+		}
+	}
+}
+
+func TestTaskDetailShowsTimestampsAndLinkedTaskStatus(t *testing.T) {
+	model := renderFixtureModel(t, true)
+	task, ok := model.snapshot.Task("DEDIT1")
+	if !ok {
+		t.Fatal("DEDIT1 not found")
+	}
+	task.UpdatedAt = time.Date(2026, 7, 24, 9, 30, 0, 0, time.UTC)
+	task.Messages = []ergo.Message{{Kind: "claim", Text: "Picked up.", CreatedAt: time.Date(2026, 7, 23, 11, 0, 0, 0, time.UTC)}}
+	task.Results = []ergo.Result{{Path: "reports/validation.md", CreatedAt: time.Date(2026, 7, 24, 9, 15, 0, 0, time.UTC)}}
+
+	rendered := ansi.Strip(model.renderTaskDetail(task, 80))
+	markdown := model.taskDetailMarkdown(task)
+	for _, value := range []string{
+		"created 2026-07-23 10:03  ·  updated 2026-07-24 09:30",
+		"2026-07-23 11:00  Picked up.",
+		"reports/validation.md  2026-07-24 09:15",
+	} {
+		if !strings.Contains(rendered, value) {
+			t.Fatalf("detail missing %q:\n%s", value, rendered)
+		}
+		if !strings.Contains(markdown, value) {
+			t.Fatalf("markdown missing %q:\n%s", value, markdown)
+		}
+	}
+	for _, value := range []string{
+		"← ✓ DONE  Load Ergo repositories  DLOAD1",
+		"→ · WAITING  Write install and keyboard guide  RDOCS1",
+	} {
+		if !strings.Contains(rendered, value) {
+			t.Fatalf("detail missing %q:\n%s", value, rendered)
+		}
+	}
+	for _, value := range []string{
+		"- ← DONE  Load Ergo repositories  DLOAD1",
+		"- ← DONE  Graph foundations  CORE01",
+		"- → WAITING  Write install and keyboard guide  RDOCS1",
+	} {
+		if !strings.Contains(markdown, value) {
+			t.Fatalf("markdown missing %q:\n%s", value, markdown)
+		}
+	}
+}
+
+func TestTaskDetailOmitsZeroTimestamps(t *testing.T) {
+	model := renderFixtureModel(t, true)
+	task := ergo.Task{
+		ID:       "LEGACY",
+		Title:    "Legacy task",
+		State:    ergo.StateTodo,
+		Messages: []ergo.Message{{Kind: "note", Text: "No time."}},
+	}
+	rendered := ansi.Strip(model.renderTaskDetail(task, 80))
+	markdown := model.taskDetailMarkdown(task)
+	for _, content := range []string{rendered, markdown} {
+		if strings.Contains(content, "created") || strings.Contains(content, "0001-01-01") {
+			t.Fatalf("zero timestamp rendered:\n%s", content)
+		}
+	}
+	if !strings.Contains(markdown, "- **NOTE**  No time.") {
+		t.Fatalf("message without time misformatted:\n%s", markdown)
+	}
+}
+
+func TestTaskDetailShowsTimestampsFromLoadedBacklog(t *testing.T) {
+	model := testModel(t)
+	task, ok := model.snapshot.Task("SCHEMA")
+	if !ok {
+		t.Fatal("SCHEMA not found")
+	}
+	markdown := model.taskDetailMarkdown(task)
+	for _, value := range []string{
+		"updated 2026-07-23 10:06",
+		"- **DONE**  2026-07-23 10:06  Migrated and verified.",
+		"db/migration.sql  2026-07-23 10:06",
+	} {
+		if !strings.Contains(markdown, value) {
+			t.Fatalf("markdown missing %q:\n%s", value, markdown)
 		}
 	}
 }

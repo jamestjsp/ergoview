@@ -54,7 +54,7 @@ Ergo View walks upward from the starting path to find `.ergo`. It reads the curr
 
 ![Ergo View dependencies](docs/img/dependencies.svg)
 
-All views share selection, fuzzy search, state filtering, and container focus. Ergo View reloads external changes once per second without losing the selected task.
+All views share selection, fuzzy search, state filtering, created-time sorting, and container focus. Ergo View reloads external changes once per second without losing the selected task.
 
 Press `c` or click the copy control in the footer to copy the selected task or container as `ID  Title`. When the Overview detail pane is focused, the same control copies the whole visible detail as clean Markdown.
 
@@ -87,6 +87,7 @@ Ergo View never edits the event log. It invokes the official Ergo CLI for every 
 | `1` / `2` / `3` | Overview / board / dependencies |
 | `/` | Fuzzy search ID, title, body, or agent |
 | `f` | Cycle state filter |
+| `s` | Cycle created-time sort: default, newest, oldest |
 | `e` | Focus the selected container |
 | `x` | Clear search and filters |
 | `tab` / `enter` (overview) | Switch or focus overview panes |
