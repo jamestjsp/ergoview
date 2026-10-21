@@ -125,7 +125,7 @@ go vet ./...
 go build -o ev ./cmd/ev
 ```
 
-Existing clones can initialize the pinned upstream compatibility reference with `git submodule update --init`. The `upstream/ergo` submodule points to the original `sandover/ergo` v6.0.0 release and supplies immutable released-major fixtures for regression tests; Ergo View does not import Ergo internals or ship the submodule in binary archives.
+Existing clones can initialize the pinned upstream compatibility reference with `git submodule update --init`. The `upstream/ergo` submodule points to the original `sandover/ergo` v6.0.5 release and supplies immutable released-major fixtures for regression tests; Ergo View does not import Ergo internals or ship the submodule in binary archives.
 
 Render fixtures and documentation images are reproducible:
 
