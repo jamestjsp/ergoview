@@ -4,21 +4,21 @@
 │ DETAIL                                                               │
 │ DOING  DEDIT1                                                        │
 │ Add task editing workflows                                           │
+│ created 2026-07-23 10:03                                             │
 │ claimed by codex@workstation                                         │
 │ container  Desktop experience  DESK01                                │
 │                                                                      │
 │ Depends on                                                           │
-│   ← Graph foundations  CORE01                                        │
-│   ← Load Ergo repositories  DLOAD1                                   │
-│   ← Build board and dependency views  DVIEW1                         │
+│   ← ◆ DONE  Graph foundations  CORE01                                │
+│   ← ✓ DONE  Load Ergo repositories  DLOAD1                           │
+│   ← ✓ DONE  Build board and dependency views  DVIEW1                 │
 │                                                                      │
 │ Unlocks                                                              │
-│   → Write install and keyboard guide  RDOCS1                         │
-│   → Review editing flow with the team  TREVW1                        │
+│   → · WAITING  Write install and keyboard guide  RDOCS1              │
+│   → · WAITING  Review editing flow with the team  TREVW1             │
 │                                                                      │
 │ Description                                                          │
 │                                                                      │
 │   ## Goal                                                            │
-│                                                                      │
 ╰──────────────────────────────────────────────────────────────────────╯
  j/k move  ·  1/2/3 views  ·  / search  ·  a actions  ·  c copy detail

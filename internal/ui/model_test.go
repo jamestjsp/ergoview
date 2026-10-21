@@ -1275,6 +1275,9 @@ func testModel(t *testing.T) Model {
 
 func testOptions(options Options) Options {
 	options.clipboard = newNativeClipboardDestination(func(string) error { return nil })
+	if options.branchOf == nil {
+		options.branchOf = func(string) string { return "" }
+	}
 	return options
 }
 
@@ -1394,5 +1397,97 @@ func assertFits(t *testing.T, content string, width, height int) {
 		if lineWidth := lipgloss.Width(line); lineWidth > width {
 			t.Fatalf("line %d width = %d, want <= %d: %q", index+1, lineWidth, width, ansi.Strip(line))
 		}
+	}
+}
+
+func TestCreatedSortKeepsHierarchyUnderFilters(t *testing.T) {
+	model := renderFixtureModel(t, true)
+	model.filter = filterActive
+	model.rebuildRows("")
+	model.updateKey(key("s"))
+	if model.sort != sortNewest {
+		t.Fatalf("sort = %v, want newest", model.sort)
+	}
+	assertRowIDs(t, model, "STAGE1", "LAUNCH", "TEAM01", "TREVW1", "REL001", "RSIGN1", "RTHEME", "RDOCS1", "CORE01", "DESK01", "DWIN01", "DEDIT1")
+	if !strings.Contains(ansi.Strip(model.renderStatus()), "sort:newest") {
+		t.Fatalf("status missing sort chip: %q", ansi.Strip(model.renderStatus()))
+	}
+
+	model.updateKey(key("s"))
+	assertRowIDs(t, model, "DESK01", "DEDIT1", "DWIN01", "CORE01", "REL001", "RDOCS1", "RTHEME", "RSIGN1", "TEAM01", "TREVW1", "LAUNCH", "STAGE1")
+
+	model.updateKey(key("x"))
+	if model.sort != sortOldest {
+		t.Fatal("clearing filters reset the sort")
+	}
+	model.updateKey(key("s"))
+	if model.sort != sortDefault || strings.Contains(model.renderStatus(), "sort:") {
+		t.Fatalf("sort did not return to default: %v", model.sort)
+	}
+}
+
+func TestCreatedSortOrdersBoardGroupsAndSearchResults(t *testing.T) {
+	model := renderFixtureModel(t, true)
+	model.sort = sortNewest
+	model.setView(viewBoard)
+	assertRowIDs(t, model,
+		"RTHEME", "DWIN01", "LAUNCH", "TREVW1", "RDOCS1", "STAGE1", "DEDIT1", "RSIGN1",
+		"FAIL01", "CORECH", "DVIEW1", "DLOAD1", "TDEMO1",
+		"TEAM01", "REL001", "CORE01", "DESK01",
+	)
+
+	model.setView(viewOverview)
+	model.search.SetValue("release")
+	model.rebuildRows("")
+	var depthZero []string
+	for _, item := range model.rows {
+		if item.depth == 0 {
+			depthZero = append(depthZero, item.id)
+		}
+	}
+	for index := 1; index < len(depthZero); index++ {
+		previous, _ := model.snapshot.Task(depthZero[index-1])
+		current, _ := model.snapshot.Task(depthZero[index])
+		if current.CreatedAt.After(previous.CreatedAt) {
+			t.Fatalf("search roots not newest first: %v", depthZero)
+		}
+	}
+}
+
+func assertRowIDs(t *testing.T, model Model, want ...string) {
+	t.Helper()
+	got := make([]string, len(model.rows))
+	for index, item := range model.rows {
+		got[index] = item.id
+	}
+	if strings.Join(got, " ") != strings.Join(want, " ") {
+		t.Fatalf("rows = %v\nwant   %v", got, want)
+	}
+}
+
+func TestHeaderShowsGitBranchAndRefreshesOnReload(t *testing.T) {
+	branch := "main"
+	model := New(testSnapshot(t), testOptions(Options{
+		NoColor:  true,
+		branchOf: func(string) string { return branch },
+	}))
+	model = resize(t, model, 120, 30)
+	if header := ansi.Strip(model.renderHeader()); !strings.Contains(header, "⎇ main") {
+		t.Fatalf("header missing branch:\n%s", header)
+	}
+
+	branch = "feature/sort"
+	command := loadBranch(model.branchOf, model.snapshot.Root)
+	updated, _ := model.Update(command())
+	model = updated.(Model)
+	if header := ansi.Strip(model.renderHeader()); !strings.Contains(header, "⎇ feature/sort") {
+		t.Fatalf("header did not refresh branch:\n%s", header)
+	}
+
+	branch = ""
+	updated, _ = model.Update(loadBranch(model.branchOf, model.snapshot.Root)())
+	model = updated.(Model)
+	if header := ansi.Strip(model.renderHeader()); strings.Contains(header, "⎇") {
+		t.Fatalf("untracked project shows a branch:\n%s", header)
 	}
 }

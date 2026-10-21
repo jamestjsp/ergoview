@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"charm.land/glamour/v2"
 	"charm.land/lipgloss/v2"
@@ -30,6 +31,10 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 	content.WriteString("\n")
 	content.WriteString(m.styles.brand.Render(task.Title))
 	content.WriteString("\n")
+	if times := taskTimes(task); times != "" {
+		content.WriteString(m.styles.metadata.Render(times))
+		content.WriteString("\n")
+	}
 	if task.ClaimedBy != "" {
 		content.WriteString(m.styles.doing.Render("claimed by " + task.ClaimedBy))
 		content.WriteString("\n")
@@ -43,7 +48,7 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 		content.WriteString("\n")
 		for _, id := range task.Dependencies {
 			content.WriteString("  ← ")
-			content.WriteString(m.taskLabel(id))
+			content.WriteString(m.linkedTaskLabel(id))
 			content.WriteString("\n")
 		}
 	}
@@ -52,7 +57,7 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 		content.WriteString("\n")
 		for _, id := range task.Dependents {
 			content.WriteString("  → ")
-			content.WriteString(m.taskLabel(id))
+			content.WriteString(m.linkedTaskLabel(id))
 			content.WriteString("\n")
 		}
 	}
@@ -76,6 +81,10 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 			content.WriteString("  ")
 			content.WriteString(m.messageKindStyle(message.Kind).Render(strings.ToUpper(message.Kind)))
 			content.WriteString("  ")
+			if stamp := formatTimestamp(message.CreatedAt); stamp != "" {
+				content.WriteString(m.styles.dim.Render(stamp))
+				content.WriteString("  ")
+			}
 			content.WriteString(message.Text)
 			content.WriteString("\n")
 		}
@@ -90,6 +99,10 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 				content.WriteString("  ")
 			}
 			content.WriteString(m.styles.metadata.Render(result.Path))
+			if stamp := formatTimestamp(result.CreatedAt); stamp != "" {
+				content.WriteString("  ")
+				content.WriteString(m.styles.dim.Render(stamp))
+			}
 			content.WriteString("\n")
 		}
 	}
@@ -99,6 +112,9 @@ func (m Model) renderTaskDetail(task ergo.Task, width int) string {
 func (m Model) taskDetailMarkdown(task ergo.Task) string {
 	sections := []string{
 		fmt.Sprintf("**%s**  `%s`\n\n# %s", m.taskDetailState(task), task.ID, task.Title),
+	}
+	if times := taskTimes(task); times != "" {
+		sections = append(sections, times)
 	}
 	if task.ClaimedBy != "" {
 		sections = append(sections, "claimed by "+task.ClaimedBy)
@@ -111,7 +127,7 @@ func (m Model) taskDetailMarkdown(task ergo.Task) string {
 		lines.WriteString("## Depends on")
 		for _, id := range task.Dependencies {
 			lines.WriteString("\n- ← ")
-			lines.WriteString(m.plainTaskLabel(id))
+			lines.WriteString(m.plainLinkedTaskLabel(id))
 		}
 		sections = append(sections, lines.String())
 	}
@@ -120,7 +136,7 @@ func (m Model) taskDetailMarkdown(task ergo.Task) string {
 		lines.WriteString("## Unlocks")
 		for _, id := range task.Dependents {
 			lines.WriteString("\n- → ")
-			lines.WriteString(m.plainTaskLabel(id))
+			lines.WriteString(m.plainLinkedTaskLabel(id))
 		}
 		sections = append(sections, lines.String())
 	}
@@ -139,7 +155,12 @@ func (m Model) taskDetailMarkdown(task ergo.Task) string {
 		var lines strings.Builder
 		lines.WriteString("## Activity")
 		for _, message := range task.Messages {
-			fmt.Fprintf(&lines, "\n- **%s**  %s", strings.ToUpper(message.Kind), message.Text)
+			fmt.Fprintf(&lines, "\n- **%s**  ", strings.ToUpper(message.Kind))
+			if stamp := formatTimestamp(message.CreatedAt); stamp != "" {
+				lines.WriteString(stamp)
+				lines.WriteString("  ")
+			}
+			lines.WriteString(message.Text)
 		}
 		sections = append(sections, lines.String())
 	}
@@ -153,6 +174,10 @@ func (m Model) taskDetailMarkdown(task ergo.Task) string {
 				lines.WriteString("  ")
 			}
 			lines.WriteString(result.Path)
+			if stamp := formatTimestamp(result.CreatedAt); stamp != "" {
+				lines.WriteString("  ")
+				lines.WriteString(stamp)
+			}
 		}
 		sections = append(sections, lines.String())
 	}
@@ -192,6 +217,41 @@ func (m Model) taskLabel(id string) string {
 		return id
 	}
 	return task.Title + "  " + m.styles.metadata.Render(id)
+}
+
+func (m Model) linkedTaskLabel(id string) string {
+	task, ok := m.snapshot.Task(id)
+	if !ok {
+		return id
+	}
+	symbol, label, style := m.taskPresentation(task)
+	return style.Render(symbol+" "+label) + "  " + m.taskLabel(id)
+}
+
+func (m Model) plainLinkedTaskLabel(id string) string {
+	task, ok := m.snapshot.Task(id)
+	if !ok {
+		return id
+	}
+	return m.taskDetailState(task) + "  " + m.plainTaskLabel(id)
+}
+
+func taskTimes(task ergo.Task) string {
+	var parts []string
+	if stamp := formatTimestamp(task.CreatedAt); stamp != "" {
+		parts = append(parts, "created "+stamp)
+	}
+	if stamp := formatTimestamp(task.UpdatedAt); stamp != "" && !task.UpdatedAt.Equal(task.CreatedAt) {
+		parts = append(parts, "updated "+stamp)
+	}
+	return strings.Join(parts, "  ·  ")
+}
+
+func formatTimestamp(value time.Time) string {
+	if value.IsZero() {
+		return ""
+	}
+	return value.Local().Format("2006-01-02 15:04")
 }
 
 func (m Model) plainTaskLabel(id string) string {

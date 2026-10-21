@@ -14,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/jamestjsp/ergoview/internal/ergo"
+	"github.com/jamestjsp/ergoview/internal/vcs"
 )
 
 const narrowBreakpoint = 96
@@ -45,6 +46,14 @@ const (
 	filterBlocked
 	filterFailed
 	filterClosed
+)
+
+type sortMode int
+
+const (
+	sortDefault sortMode = iota
+	sortNewest
+	sortOldest
 )
 
 type row struct {
@@ -83,6 +92,7 @@ type Options struct {
 	Runner       CommandRunner
 	Capabilities *ergo.Capabilities
 	clipboard    *clipboardDestination
+	branchOf     func(string) string
 }
 
 type Model struct {
@@ -99,6 +109,7 @@ type Model struct {
 	view              viewMode
 	filter            stateFilter
 	containerFilter   string
+	sort              sortMode
 	searching         bool
 	search            textinput.Model
 	actionMenu        bool
@@ -120,6 +131,8 @@ type Model struct {
 	graphFocusID      string
 	graphFocusHistory []string
 	graphScope        graphScope
+	branch            string
+	branchOf          func(string) string
 }
 
 func New(snapshot ergo.Snapshot, options Options) Model {
@@ -127,6 +140,10 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 	clipboard := options.clipboard
 	if clipboard == nil {
 		clipboard = systemClipboardDestination()
+	}
+	branchOf := options.branchOf
+	if branchOf == nil {
+		branchOf = vcs.Branch
 	}
 	search := textinput.New()
 	search.Prompt = "/ "
@@ -150,6 +167,8 @@ func New(snapshot ergo.Snapshot, options Options) Model {
 			viewport.WithHeight(10),
 		),
 		graphScope: graphScopeAdaptive,
+		branch:     branchOf(snapshot.Root),
+		branchOf:   branchOf,
 	}
 	if options.Capabilities != nil {
 		model.capabilities = *options.Capabilities
@@ -208,7 +227,10 @@ func (m Model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		if m.source == nil {
 			return m, nil
 		}
-		return m, tea.Batch(loadSnapshot(m.source), nextReload())
+		return m, tea.Batch(loadSnapshot(m.source), loadBranch(m.branchOf, m.snapshot.Root), nextReload())
+	case branchLoadedMsg:
+		m.branch = string(message)
+		return m, nil
 	case snapshotLoadedMsg:
 		if message.err != nil {
 			m.loadErr = message.err
@@ -345,6 +367,9 @@ func (m *Model) updateKey(message tea.KeyPressMsg) tea.Cmd {
 		return nil
 	case "f":
 		m.cycleFilter()
+		return nil
+	case "s":
+		m.cycleSort()
 		return nil
 	case "e":
 		m.filterToSelectedContainer()
@@ -603,7 +628,7 @@ func (m *Model) rebuildRows(selectedID string) {
 			return false
 		}
 		var childRows []row
-		for _, childID := range task.Children {
+		for _, childID := range m.sortedIDs(task.Children) {
 			before := len(m.rows)
 			if collect(childID, depth+1) {
 				childRows = append(childRows, m.rows[before:]...)
@@ -620,7 +645,7 @@ func (m *Model) rebuildRows(selectedID string) {
 	if m.containerFilter != "" {
 		collect(m.containerFilter, 0)
 	} else {
-		for _, rootID := range m.snapshot.Roots {
+		for _, rootID := range m.sortedIDs(m.snapshot.Roots) {
 			collect(rootID, 0)
 		}
 	}
@@ -721,11 +746,52 @@ func (m *Model) sortRowsForBoard() {
 		leftTask, _ := m.snapshot.Task(m.rows[left].id)
 		rightTask, _ := m.snapshot.Task(m.rows[right].id)
 		leftOrder, rightOrder := order(leftTask), order(rightTask)
-		if leftOrder == rightOrder {
-			return leftTask.ID < rightTask.ID
+		if leftOrder != rightOrder {
+			return leftOrder < rightOrder
 		}
-		return leftOrder < rightOrder
+		if m.sort != sortDefault && !leftTask.CreatedAt.Equal(rightTask.CreatedAt) {
+			return m.createdBefore(leftTask, rightTask)
+		}
+		return leftTask.ID < rightTask.ID
 	})
+}
+
+func (m Model) sortedIDs(ids []string) []string {
+	if m.sort == sortDefault {
+		return ids
+	}
+	sorted := append([]string(nil), ids...)
+	sort.SliceStable(sorted, func(left, right int) bool {
+		leftTask, _ := m.snapshot.Task(sorted[left])
+		rightTask, _ := m.snapshot.Task(sorted[right])
+		return m.createdBefore(leftTask, rightTask)
+	})
+	return sorted
+}
+
+func (m Model) createdBefore(left, right ergo.Task) bool {
+	if m.sort == sortNewest {
+		return left.CreatedAt.After(right.CreatedAt)
+	}
+	return left.CreatedAt.Before(right.CreatedAt)
+}
+
+func (m *Model) cycleSort() {
+	selectedID := m.selectedID()
+	m.sort = (m.sort + 1) % (sortOldest + 1)
+	m.rebuildRows(selectedID)
+	m.syncDetail()
+}
+
+func (m Model) sortLabel() string {
+	switch m.sort {
+	case sortNewest:
+		return "newest"
+	case sortOldest:
+		return "oldest"
+	default:
+		return "default"
+	}
 }
 
 func (m *Model) setView(view viewMode) {
@@ -871,6 +937,8 @@ type snapshotLoadedMsg struct {
 	err      error
 }
 
+type branchLoadedMsg string
+
 type capabilitiesLoadedMsg struct {
 	capabilities ergo.Capabilities
 	err          error
@@ -886,6 +954,12 @@ func loadSnapshot(source SnapshotSource) tea.Cmd {
 	return func() tea.Msg {
 		snapshot, changed, err := source.LoadIfChanged()
 		return snapshotLoadedMsg{snapshot: snapshot, changed: changed, err: err}
+	}
+}
+
+func loadBranch(branchOf func(string) string, root string) tea.Cmd {
+	return func() tea.Msg {
+		return branchLoadedMsg(branchOf(root))
 	}
 }
 
